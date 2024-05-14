@@ -13,7 +13,7 @@ This project implements a framework for generating design-by-contract specificat
 
 1. **Clone the repository:**
     ```bash
-    git clone https://github.com/YOUR_USERNAME/DbC-GPT.git
+    git clone https://github.com/formalblocks/DbC-GPT.git
     cd DbC-GPT
     ```
 
