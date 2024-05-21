@@ -12,7 +12,7 @@ To build run a contract on solc-verify run ``./run.sh $name_of_contract``
 
 To generate the merge contract for ERC20, one can run:
 
-``python3 solc-verify-generator.py "./ERC20/spec.sol" "./ERC20/imp/ERC20_merge.template" "./ERC20/imp/ERC20_merge.sol"``
+``python3 solc-verify-generator.py "./ERC20/spec.sol" "./ERC20/templates/imp_spec_merge.template" "./ERC20/imp/ERC20_merge.sol"``
 
 In the ERC20 folder we have all the artifacts that we need for our ERC20 training: there is a specification (spec.sol), the eip (eip.md), and an implementation in (imp). Inside this implementation folder, we have also a template for a merge contract (ERC20_merge.template) for the ERC20 reference implementation we have at hand. 
 
