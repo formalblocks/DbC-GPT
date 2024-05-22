@@ -28,7 +28,7 @@ To install and manage different versions of the Solidity compiler (solc), follow
 
 To generate the merge contract for ERC20, one can run:
 
-``python3 solc-verify-generator.py "./ERC20/spec.sol" "./ERC20/imp/ERC20_merge.template" "./ERC20/imp/ERC20_merge.sol"``
+``python3 solc-verify-generator.py "./ERC20/spec.sol" "./ERC20/templates/imp_spec_merge.template" "./ERC20/imp/ERC20_merge.sol"``
 
 In the ERC20 folder we have all the artifacts that we need for our ERC20 training: there is a specification (spec.sol), the eip (eip.md), and an implementation in (imp). Inside this implementation folder, we have also a template for a merge contract (ERC20_merge.template) for the ERC20 reference implementation we have at hand. 
 
