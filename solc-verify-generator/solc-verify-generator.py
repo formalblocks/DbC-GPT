@@ -15,11 +15,13 @@ def call_solc(file_path):
 
 def process_annotations(annotations, state_variables, prefix):
     for key, value in annotations.items():
-        prefixed_value = add_prefix(value, state_variables, prefix)
-        
-        old_prefixed_value = remove_old_ref(prefixed_value, prefix)
-        print(old_prefixed_value)
-        annotations[key] = add_triple_bars(old_prefixed_value)
+        processed_annotation = value
+        if prefix:
+            prefixed_value = add_prefix(value, state_variables, prefix)
+            old_prefixed_value = remove_old_ref(prefixed_value, prefix)
+            processed_annotation = old_prefixed_value
+
+        annotations[key] = add_triple_bars(processed_annotation)
 
 def add_prefix(annotation: string, state_variables: dict, prefix):
     for state_variable_name in state_variables.keys():
