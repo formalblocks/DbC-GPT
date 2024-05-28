@@ -11,7 +11,10 @@ SPEC_PATH=os.path.join("temp","spec.sol_json.ast")
 def call_solc(file_path):
     if os.path.isfile(SPEC_PATH):
         os.remove(SPEC_PATH)
-    subprocess.run([SOLC, file_path, "--ast-compact-json", "-o", "temp"])
+    from subprocess import PIPE, run
+    command = [SOLC, file_path, "--ast-compact-json", "-o", "temp"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    return result
 
 def process_annotations(annotations, state_variables, prefix):
     for key, value in annotations.items():
@@ -42,7 +45,10 @@ def add_triple_bars(value):
 
 
 def generate_merge(spec, imp_template, merge_file_path, prefix=None):
-    call_solc(spec)
+    result = call_solc(spec)
+    if result.returncode:
+        # Something has gone wrong compiling the solidity code
+        raise RuntimeError(result.returncode, result.stdout + result.stderr)
     annotations, state_variables = parse_ast()
     process_annotations(annotations, state_variables, prefix)
 
