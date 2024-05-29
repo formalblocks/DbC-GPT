@@ -7,7 +7,6 @@ category: ERC
 status: Final
 created: 2015-11-19
 ---
-[//]: <> (Added by Pedro: Extracted from: https://github.com/ethereum/ERCs/blob/086af7999f6ec54ed53273e3bf2a2562f254d101/ERCS/erc-20.md)
 
 ## Simple Summary
 
