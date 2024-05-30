@@ -94,7 +94,9 @@ def parse_state_variable(node_json, state_variables):
 def parse_function(function_json, annotations):
     annotation = function_json["documentation"]
     name = function_json["name"]
-    annotations[name] = annotation
+    parameters_size = len(function_json["parameters"]["parameters"])
+    annotations[name] = annotation # [$functionName] -> annotation (legacy)
+    annotations[name + str(parameters_size)] = annotation # also: [$functionName + $numberOfParameters] -> annotation (for overloaded functions)
 
 
 if __name__ == "__main__":
