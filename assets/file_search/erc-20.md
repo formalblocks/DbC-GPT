@@ -1,13 +1,3 @@
----
-eip: 20
-title: Token Standard
-author: Fabian Vogelsteller <fabian@ethereum.org>, Vitalik Buterin <vitalik.buterin@ethereum.org>
-type: Standards Track
-category: ERC
-status: Final
-created: 2015-11-19
----
-
 ## Simple Summary
 
 A standard interface for tokens.
@@ -166,28 +156,3 @@ MUST trigger on any successful call to `approve(address _spender, uint256 _value
 ``` js
 event Approval(address indexed _owner, address indexed _spender, uint256 _value)
 ```
-
-
-
-## Implementation
-
-There are already plenty of ERC20-compliant tokens deployed on the Ethereum network.
-Different implementations have been written by various teams that have different trade-offs: from gas saving to improved security.
-
-#### Example implementations are available at
-- [OpenZeppelin implementation](../assets/eip-20/OpenZeppelin-ERC20.sol)
-- [ConsenSys implementation](../assets/eip-20/Consensys-EIP20.sol)
-
-
-## History
-
-Historical links related to this standard:
-
-- Original proposal from Vitalik Buterin: https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs/499c882f3ec123537fc2fccd57eaa29e6032fe4a
-- Reddit discussion: https://www.reddit.com/r/ethereum/comments/3n8fkn/lets_talk_about_the_coin_standard/
-- Original Issue #20: https://github.com/ethereum/EIPs/issues/20
-
-
-
-## Copyright
-Copyright and related rights waived via [CC0](../LICENSE.md).
