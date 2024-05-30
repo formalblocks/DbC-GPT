@@ -9,7 +9,7 @@ from dataclasses import dataclass
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 openai.api_key = "sk-proj-klVFxlWU41a2lERXRag4T3BlbkFJ58oP09nvtT4sJHQhO0VB"
-assistant_id = "asst_oD5x8GieyWtIjNZPtkcXKFG4"
+assistant_id = "asst_b4escj1bEDE6vlyqJundnEn0"
 
 class Assistant:
     
@@ -50,7 +50,13 @@ class Interaction:
         openai.beta.threads.messages.create(
             thread_id = self.thread.id,
             role = "user",
-            content = self.prompt
+            content = self.prompt,
+            attachments = [
+                {
+                    "file_id": "file-UJqP1JMzl0YRk1kVf8pjyUC9",
+                    "tools": [{"type": "file_search"}]
+                }
+            ]
         )
     
     def _create_run(self):
@@ -92,8 +98,8 @@ class SolcVerifyWrapper:
 
     SOLC_VERIFY_CMD = "solc-verify.py"
     SPEC_FILE_PATH = './temp/spec.sol'
-    # erc20_template_path = './solc_verify_generator/ERC20/templates/imp_spec_merge.template'
-    ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement.template'
+    ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/imp_spec_merge.template'
+    #ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement.template'
     ERC20_MERGE_PATH = './solc_verify_generator/ERC20/imp/ERC20_merge.sol'
 
     @classmethod
@@ -161,6 +167,14 @@ def loop(thread: Thread, message: str):
 assistant = Assistant(assistant_id)
 thread = Thread(assistant)
 loop(thread, """
+    Given an ERC20 specification template and the ERC20 EIP attached on file search, return the exact same specification template with solc-verify postconditions annotations added.
+     
+    ERC20 function with solc-verify annotation example:
+    /// @notice postcondition _allowed[_owner][_spender] == remaining
+    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
+     
+    Here follows the ERC20 specification file, return the exactly same specification file with solc-verify postconditions annotations added:
+
     pragma solidity >=0.5.0;
 
     contract ERC20 {
@@ -169,14 +183,11 @@ loop(thread, """
         mapping (address => mapping (address => uint)) _allowed;
         uint public _totalSupply;
 
-        event Transfer(address indexed from, address indexed to, uint value);
-        event Approval(address indexed owner, address indexed spender, uint value);
-
-
-        
+        event Transfer(address indexed _from, address indexed _to, uint _value);
+        event Approval(address indexed _owner, address indexed _spender, uint _value);
+     
         function transfer(address to, uint value) public returns (bool success);
 
-        
         function transferFrom(address from, address to, uint value) public returns (bool success);
 
         function approve(address spender, uint value) public returns (bool success);
@@ -185,13 +196,5 @@ loop(thread, """
 
         function allowance(address owner, address spender) public view returns (uint remaining);
     }
-    """)
-
-
-
-
-
-
-
-
-
+    """
+)
