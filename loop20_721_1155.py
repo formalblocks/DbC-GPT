@@ -64,6 +64,36 @@ class Interaction:
                     # ERC 20 interface
                     "file_id": "file-y6f05hiBCqm6h8596aPJxc7e",
                     "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 721 ref spec
+                    "file_id": "file-g9etf6hVTpRxveujQkVvdysA",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # EIP 721
+                    "file_id": "file-qxLGK6Pnjq1oPzNYkQmk07r5",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 721 interface
+                    "file_id": "file-fM3pZzInzDIUcHCbn2kznwm7",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 1155 ref spec
+                    "file_id": "file-9LUV0Mq6XAmTqDMUlZ3COBE8",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # EIP 1155
+                    "file_id": "file-nzCmYOTTTv0dX5JISGtHJiGF",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 1155 interface
+                    "file_id": "file-qAHkhdXcxNUTlgszVabGfIDW",
+                    "tools": [{"type": "file_search"}]
                 }               
             ]
         )
@@ -185,9 +215,12 @@ thread = Thread(assistant)
 loop(thread, """
     Given an ERC interface and an EIP markdown, I would like you to generate a specification for the ERC interface with solc-verify postconditions annotations, just postconditions, no other annotations types, this is very important!
 
-    The specification must not contain function bodies (i.e. implementations). Please each function must have at most 4 postcondition (/// @notice postcondition) annotations, above the function signature, do not exceed this amount under any circumstances!
-    
-    For instance, for ERC interface erc20_interface.md (file-y6f05hiBCqm6h8596aPJxc7e)  and EIP markdown erc-20.md (file-UJqP1JMzl0YRk1kVf8pjyUC9), you should generate the specification.
+    The specification must not contain function bodies (i.e. implementations). Please each function must have at most 4 postcondition (/// @notice postcondition) annotations, do not exceed this amount under any circumstances!
+
+    For instance: 
+    - for ERC721 interface erc721_interface.md (file-fM3pZzInzDIUcHCbn2kznwm7) and EIP markdown erc-721.md (file-qxLGK6Pnjq1oPzNYkQmk07r5), the expected specification should be this one: erc721_ref_spec.md (file-g9etf6hVTpRxveujQkVvdysA)
+    - for ERC1155 interface erc1155_interface.md (file-qAHkhdXcxNUTlgszVabGfIDW) and EIP markdown erc-1155.md (file-nzCmYOTTTv0dX5JISGtHJiGF), the expected specification should be this one: erc1155_ref_spec.md (file-9LUV0Mq6XAmTqDMUlZ3COBE8)
+    - for ERC20 interface erc20_interface.md (file-y6f05hiBCqm6h8596aPJxc7e) and EIP markdown erc-20.md (file-UJqP1JMzl0YRk1kVf8pjyUC9),  you should generate the specification.
 
     ### Guidance for Generating Postconditions:
 
@@ -195,7 +228,6 @@ loop(thread, """
     2. **Invariants**: Ensure that invariants hold before and after the function execution, such as the total number of tokens.
     3. **Conditions on Input**: Reflect on how inputs affect the state variables. 
     4. **Reset Conditions**: Ensure that certain variables are reset after the function execution, if applicable.
-
 
     Can you please generate a specification given the following ERC interface (delimited by token <interface>) and EIP markdown (delimited by token <eip>)?
         
@@ -230,157 +262,163 @@ loop(thread, """
     EIP markdown below:
 
     <eip>
-    ## Simple Summary
+        ## Simple Summary
 
-    A standard interface for tokens.
+        A standard interface for tokens.
 
 
-    ## Abstract
+        ## Abstract
 
-    The following standard allows for the implementation of a standard API for tokens within smart contracts.
-    This standard provides basic functionality to transfer tokens, as well as allow tokens to be approved so they can be spent by another on-chain third party.
+        The following standard allows for the implementation of a standard API for tokens within smart contracts.
+        This standard provides basic functionality to transfer tokens, as well as allow tokens to be approved so they can be spent by another on-chain third party.
 
 
-    ## Motivation
+        ## Motivation
 
-    A standard interface allows any tokens on Ethereum to be re-used by other applications: from wallets to decentralized exchanges.
+        A standard interface allows any tokens on Ethereum to be re-used by other applications: from wallets to decentralized exchanges.
 
 
-    ## Specification
+        ## Specification
 
-    ## Token
-    ### Methods
+        ## Token
+        ### Methods
 
-    **NOTES**:
-    - The following specifications use syntax from Solidity `0.4.17` (or above)
-    - Callers MUST handle `false` from `returns (bool success)`.  Callers MUST NOT assume that `false` is never returned!
+        **NOTES**:
+        - The following specifications use syntax from Solidity `0.4.17` (or above)
+        - Callers MUST handle `false` from `returns (bool success)`.  Callers MUST NOT assume that `false` is never returned!
 
 
-    #### name
+        #### name
 
-    Returns the name of the token - e.g. `"MyToken"`.
+        Returns the name of the token - e.g. `"MyToken"`.
 
-    OPTIONAL - This method can be used to improve usability,
-    but interfaces and other contracts MUST NOT expect these values to be present.
+        OPTIONAL - This method can be used to improve usability,
+        but interfaces and other contracts MUST NOT expect these values to be present.
 
 
-    ``` js
-    function name() public view returns (string)
-    ```
+        ``` js
+        function name() public view returns (string)
+        ```
 
 
-    #### symbol
+        #### symbol
 
-    Returns the symbol of the token. E.g. "HIX".
+        Returns the symbol of the token. E.g. "HIX".
 
-    OPTIONAL - This method can be used to improve usability,
-    but interfaces and other contracts MUST NOT expect these values to be present.
+        OPTIONAL - This method can be used to improve usability,
+        but interfaces and other contracts MUST NOT expect these values to be present.
 
-    ``` js
-    function symbol() public view returns (string)
-    ```
+        ``` js
+        function symbol() public view returns (string)
+        ```
 
 
 
-    #### decimals
+        #### decimals
 
-    Returns the number of decimals the token uses - e.g. `8`, means to divide the token amount by `100000000` to get its user representation.
+        Returns the number of decimals the token uses - e.g. `8`, means to divide the token amount by `100000000` to get its user representation.
 
-    OPTIONAL - This method can be used to improve usability,
-    but interfaces and other contracts MUST NOT expect these values to be present.
+        OPTIONAL - This method can be used to improve usability,
+        but interfaces and other contracts MUST NOT expect these values to be present.
 
-    ``` js
-    function decimals() public view returns (uint8)
-    ```
+        ``` js
+        function decimals() public view returns (uint8)
+        ```
 
 
-    #### totalSupply
+        #### totalSupply
 
-    Returns the total token supply.
+        Returns the total token supply.
 
-    ``` js
-    function totalSupply() public view returns (uint256)
-    ```
+        ``` js
+        function totalSupply() public view returns (uint256)
+        ```
 
 
 
-    #### balanceOf
+        #### balanceOf
 
-    Returns the account balance of another account with address `_owner`.
+        Returns the account balance of another account with address `_owner`.
 
-    ``` js
-    function balanceOf(address _owner) public view returns (uint256 balance)
-    ```
+        ``` js
+        function balanceOf(address _owner) public view returns (uint256 balance)
+        ```
 
 
 
-    #### transfer
+        #### transfer
 
-    Transfers `_value` amount of tokens to address `_to`, and MUST fire the `Transfer` event.
-    The function SHOULD `throw` if the message caller's account balance does not have enough tokens to spend.
+        Transfers `_value` amount of tokens to address `_to`, and MUST fire the `Transfer` event.
+        The function SHOULD `throw` if the message caller's account balance does not have enough tokens to spend.
 
-    *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
+        *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
 
-    ``` js
-    function transfer(address _to, uint256 _value) public returns (bool success)
-    ```
+        ``` js
+        function transfer(address _to, uint256 _value) public returns (bool success)
+        ```
 
 
 
-    #### transferFrom
+        #### transferFrom
 
-    Transfers `_value` amount of tokens from address `_from` to address `_to`, and MUST fire the `Transfer` event.
+        Transfers `_value` amount of tokens from address `_from` to address `_to`, and MUST fire the `Transfer` event.
 
-    The `transferFrom` method is used for a withdraw workflow, allowing contracts to transfer tokens on your behalf.
-    This can be used for example to allow a contract to transfer tokens on your behalf and/or to charge fees in sub-currencies.
-    The function SHOULD `throw` unless the `_from` account has deliberately authorized the sender of the message via some mechanism.
+        The `transferFrom` method is used for a withdraw workflow, allowing contracts to transfer tokens on your behalf.
+        This can be used for example to allow a contract to transfer tokens on your behalf and/or to charge fees in sub-currencies.
+        The function SHOULD `throw` unless the `_from` account has deliberately authorized the sender of the message via some mechanism.
 
-    *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
+        *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
 
-    ``` js
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)
-    ```
+        ``` js
+        function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)
+        ```
 
 
-    #### approve
 
-    Allows `_spender` to withdraw from your account multiple times, up to the `_value` amount. If this function is called again it overwrites the current allowance with `_value`.
+        #### approve
 
-    **NOTE**: To prevent attack vectors like the one [described here](https://docs.google.com/document/d/1YLPtQxZu1UAvO9cZ1O2RPXBbT0mooh4DYKjA_jp-RLM/) and discussed [here](https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729),
-    clients SHOULD make sure to create user interfaces in such a way that they set the allowance first to `0` before setting it to another value for the same spender.
-    THOUGH The contract itself shouldn't enforce it, to allow backwards compatibility with contracts deployed before
+        Allows `_spender` to withdraw from your account multiple times, up to the `_value` amount. If this function is called again it overwrites the current allowance with `_value`.
 
-    ``` js
-    function approve(address _spender, uint256 _value) public returns (bool success)
-    ```
+        **NOTE**: To prevent attack vectors like the one [described here](https://docs.google.com/document/d/1YLPtQxZu1UAvO9cZ1O2RPXBbT0mooh4DYKjA_jp-RLM/) and discussed [here](https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729),
+        clients SHOULD make sure to create user interfaces in such a way that they set the allowance first to `0` before setting it to another value for the same spender.
+        THOUGH The contract itself shouldn't enforce it, to allow backwards compatibility with contracts deployed before
 
-    #### allowance
+        ``` js
+        function approve(address _spender, uint256 _value) public returns (bool success)
+        ```
 
-    Returns the amount which `_spender` is still allowed to withdraw from `_owner`.
 
-    ``` js
-    function allowance(address _owner, address _spender) public view returns (uint256 remaining)
-    ```
+        #### allowance
 
-    ### Events
+        Returns the amount which `_spender` is still allowed to withdraw from `_owner`.
 
-    #### Transfer
+        ``` js
+        function allowance(address _owner, address _spender) public view returns (uint256 remaining)
+        ```
 
-    MUST trigger when tokens are transferred, including zero value transfers.
 
-    A token contract which creates new tokens SHOULD trigger a Transfer event with the `_from` address set to `0x0` when tokens are created.
 
-    ``` js
-    event Transfer(address indexed _from, address indexed _to, uint256 _value)
-    ```
+        ### Events
 
-    #### Approval
 
-    MUST trigger on any successful call to `approve(address _spender, uint256 _value)`.
+        #### Transfer
 
-    ``` js
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value)
-    ```
-    </eip>
+        MUST trigger when tokens are transferred, including zero value transfers.
+
+        A token contract which creates new tokens SHOULD trigger a Transfer event with the `_from` address set to `0x0` when tokens are created.
+
+        ``` js
+        event Transfer(address indexed _from, address indexed _to, uint256 _value)
+        ```
+
+
+
+        #### Approval
+
+        MUST trigger on any successful call to `approve(address _spender, uint256 _value)`.
+
+        ``` js
+        event Approval(address indexed _owner, address indexed _spender, uint256 _value)
+        ```
     """
 )
