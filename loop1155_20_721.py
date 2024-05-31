@@ -79,7 +79,22 @@ class Interaction:
                     # ERC 1155 interface
                     "file_id": "file-qAHkhdXcxNUTlgszVabGfIDW",
                     "tools": [{"type": "file_search"}]
-                }               
+                },
+                {
+                    # EIP 721
+                    "file_id": "file-qxLGK6Pnjq1oPzNYkQmk07r5",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 721 interface
+                    "file_id": "file-fM3pZzInzDIUcHCbn2kznwm7",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 721 ref spec
+                    "file_id": "file-g9etf6hVTpRxveujQkVvdysA",
+                    "tools": [{"type": "file_search"}]
+                },            
             ]
         )
     
@@ -204,6 +219,7 @@ loop(thread, """
 
     For instance: 
     - for ERC20 interface erc20_interface.md (file-y6f05hiBCqm6h8596aPJxc7e), and EIP markdown erc-20z.md (file-UJqP1JMzl0YRk1kVf8pjyUC9) the expected specification should be this one: erc20_ref_spec.md (file-8KXyHtZx5wdBLwLUFerN8xdP)
+    - for ERC721 interface erc721_interface.md (file-fM3pZzInzDIUcHCbn2kznwm7), and EIP markdown erc-721.md (file-qxLGK6Pnjq1oPzNYkQmk07r5) the expected specification should be this one: erc721_ref_spec.md (file-g9etf6hVTpRxveujQkVvdysA)
     - for ERC1155 interface erc1155_interface.md (file-qAHkhdXcxNUTlgszVabGfIDW) and EIP markdown erc-1155.md (file-nzCmYOTTTv0dX5JISGtHJiGF), please generate the specification.
 
     Can you please generate a specification given the following ERC interface (delimited by token <interface>)?
