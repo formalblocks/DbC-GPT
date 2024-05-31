@@ -1,1 +1,1 @@
-docker build --platform linux/amd64 -t solc-verify -f Dockerfile .
+docker build --platform linux/amd64 -t solc-verify-0.5 -f Dockerfile_0.5 .
