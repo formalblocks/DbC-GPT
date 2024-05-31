@@ -11,6 +11,9 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 openai.api_key = "sk-proj-klVFxlWU41a2lERXRag4T3BlbkFJ58oP09nvtT4sJHQhO0VB"
 assistant_id = "asst_b4escj1bEDE6vlyqJundnEn0"
 
+# Initialize the global counter
+interaction_counter = 0
+
 class Assistant:
     
     def __init__(self, id) -> None:
@@ -53,9 +56,25 @@ class Interaction:
             content = self.prompt,
             attachments = [
                 {
-                    "file_id": "file-UJqP1JMzl0YRk1kVf8pjyUC9",
+                    # ERC 20 interface
+                    "file_id": "file-y6f05hiBCqm6h8596aPJxc7e",
                     "tools": [{"type": "file_search"}]
-                }
+                },
+                {
+                    # ERC 20 ref spec
+                    "file_id": "file-8KXyHtZx5wdBLwLUFerN8xdP",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # EIP 1155
+                    "file_id": "file-nzCmYOTTTv0dX5JISGtHJiGF",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 1155 interface
+                    "file_id": "file-qAHkhdXcxNUTlgszVabGfIDW",
+                    "tools": [{"type": "file_search"}]
+                }               
             ]
         )
     
@@ -98,9 +117,9 @@ class SolcVerifyWrapper:
 
     SOLC_VERIFY_CMD = "solc-verify.py"
     SPEC_FILE_PATH = './temp/spec.sol'
-    ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/imp_spec_merge.template'
+    ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC1155/templates/imp_spec_merge.template'
     #ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement.template'
-    ERC20_MERGE_PATH = './solc_verify_generator/ERC20/imp/ERC20_merge.sol'
+    ERC20_MERGE_PATH = './solc_verify_generator/ERC1155/imp/ERC1155_merge.sol'
 
     @classmethod
     def call_solc(cls, file_path) -> VerificationResult:
@@ -151,6 +170,13 @@ class Utils:
 
 
 def loop(thread: Thread, message: str):
+    global interaction_counter
+    interaction_counter += 1
+    # Break the loop if the counter is greater than 10
+    if interaction_counter > 10:
+        print("Counter exceeded 10, breaking the loop")
+        return
+    print('COUNTER', interaction_counter)
     interaction: Interaction = thread.send_message(message)
     response: str = interaction.await_for_response()
     solidity_code = Utils.extract_solidity_code(response)
@@ -167,34 +193,41 @@ def loop(thread: Thread, message: str):
 assistant = Assistant(assistant_id)
 thread = Thread(assistant)
 loop(thread, """
-    Given an ERC20 specification template and the ERC20 EIP attached on file search, return the exact same specification template with solc-verify postconditions annotations added.
-     
-    ERC20 function with solc-verify annotation example:
-    /// @notice postcondition _allowed[_owner][_spender] == remaining
-    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
-     
-    Here follows the ERC20 specification file, return the exactly same specification file with solc-verify postconditions annotations added:
+    Given an ERC interface and an EIP markdown, I would like you to generate a specification for the ERC interface with solc-verify postconditions annotations, just postconditions, no other annotations types, this is very important!
 
-    pragma solidity >=0.5.0;
+    The specification must not contain function bodies (i.e. implementations). Please each function must have at most 4 postcondition (/// @notice postcondition) annotations, do not exceed this amount under any circumstances!
 
-    contract ERC20 {
+    For instance: 
+    - for ERC20 interface erc20_interface.md (file-y6f05hiBCqm6h8596aPJxc7e), the expected specification should be this one: erc20_ref_spec.md (file-8KXyHtZx5wdBLwLUFerN8xdP)
+    - for ERC1155 interface erc1155_interface.md (file-qAHkhdXcxNUTlgszVabGfIDW) and EIP markdown erc-1155.md (file-nzCmYOTTTv0dX5JISGtHJiGF), please generate the specification.
 
-        mapping (address => uint) _balances;
-        mapping (address => mapping (address => uint)) _allowed;
-        uint public _totalSupply;
+    *Note:* For the transfer function, when `msg.sender` is the same as `_to` the balance must not change
 
-        event Transfer(address indexed _from, address indexed _to, uint _value);
-        event Approval(address indexed _owner, address indexed _spender, uint _value);
-     
-        function transfer(address to, uint value) public returns (bool success);
+    Can you please generate a specification given the following ERC interface (delimited by token <interface>)?
 
-        function transferFrom(address from, address to, uint value) public returns (bool success);
+    Remember to follow the same syntax of: erc20_ref_spec.md (file-8KXyHtZx5wdBLwLUFerN8xdP)
+        
+    ERC interface:
 
-        function approve(address spender, uint value) public returns (bool success);
+    <interface>
+        // SPDX-License-Identifier: MIT
 
-        function balanceOf(address owner) public view returns (uint balance);
+        pragma solidity >= 0.5.0;
 
-        function allowance(address owner, address spender) public view returns (uint remaining);
-    }
+        contract IERC1155  {
+
+            function balanceOf(address account, uint256 id) public view   returns (uint256 balance);
+            
+            function balanceOfBatch(address[] memory accounts, uint256[] memory ids) public view returns (uint256[] memory batchBalances);
+
+            function setApprovalForAll(address operator, bool approved) public;
+
+            function isApprovedForAll(address account, address operator) public view returns (bool approved);
+
+            function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public;
+
+            function safeBatchTransferFrom(address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) public;
+        }
+    </interface>
     """
 )
