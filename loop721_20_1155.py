@@ -56,13 +56,28 @@ class Interaction:
             content = self.prompt,
             attachments = [
                 {
+                    # EIP 20
+                    "file_id": "file-UJqP1JMzl0YRk1kVf8pjyUC9",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 20 interface
+                    "file_id": "file-y6f05hiBCqm6h8596aPJxc7e",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
+                    # ERC 20 ref spec
+                    "file_id": "file-8KXyHtZx5wdBLwLUFerN8xdP",
+                    "tools": [{"type": "file_search"}]
+                },
+                {
                     # EIP 1155
                     "file_id": "file-nzCmYOTTTv0dX5JISGtHJiGF",
                     "tools": [{"type": "file_search"}]
                 },
                 {
                     # ERC 1155 interface
-                    "file_id": "file-qAHkhdXcxNUTlgszVabGfIDW",
+                    "file_id": "file-Hh5rfDuJBIpAo1F2wHQgT11j",
                     "tools": [{"type": "file_search"}]
                 },
                 {
@@ -72,7 +87,7 @@ class Interaction:
                 },
                 {
                     # EIP 721
-                    "file_id": "file-KZhutHE96g6NvZOpnGYFzFdy",
+                    "file_id": "file-qxLGK6Pnjq1oPzNYkQmk07r5",
                     "tools": [{"type": "file_search"}]
                 },
                 {
@@ -203,7 +218,8 @@ loop(thread, """
     The specification must not contain function bodies (i.e. implementations). Please each function must have at most 4 postcondition (/// @notice postcondition) annotations, above the function signature, do not exceed this amount under any circumstances!
 
     For instance: 
-    - for ERC1155 interface erc1155_interface.md (file-qAHkhdXcxNUTlgszVabGfIDW) and EIP markdown erc-1155.md (file-nzCmYOTTTv0dX5JISGtHJiGF), the expected specification should be this one: erc1155_ref_spec.md (file-9LUV0Mq6XAmTqDMUlZ3COBE8)
+    - for ERC20 interface erc20_interface.md (file-y6f05hiBCqm6h8596aPJxc7e) and EIP markdown erc-20.md (file-UJqP1JMzl0YRk1kVf8pjyUC9), the expected specification should be this one: erc20_ref_spec.md (file-8KXyHtZx5wdBLwLUFerN8xdP)
+    - for ERC1155 interface erc1155_interface.md (file-Hh5rfDuJBIpAo1F2wHQgT11j) and EIP markdown erc-1155.md (file-nzCmYOTTTv0dX5JISGtHJiGF), the expected specification should be this one: erc1155_ref_spec.md (file-9LUV0Mq6XAmTqDMUlZ3COBE8)
     - for ERC721 interface erc721_interface.md (file-fM3pZzInzDIUcHCbn2kznwm7) and EIP markdown erc-721.md (file-qxLGK6Pnjq1oPzNYkQmk07r5), please generate the specification.
 
     ### Guidance for Generating Postconditions:
@@ -647,6 +663,36 @@ loop(thread, """
         XXXXERC721, by William Entriken -- a scalable example implementation
 
         - Deployed on testnet with 1 billion assets and supporting all lookups with the metadata extension. This demonstrates that scaling is NOT a problem.
+
+        ## References
+
+        **Standards**
+
+        1. [ERC-20](./eip-20.md) Token Standard.
+        1. [ERC-165](./eip-165.md) Standard Interface Detection.
+        1. [ERC-173](./eip-173.md) Owned Standard.
+        1. [ERC-223](https://github.com/ethereum/EIPs/issues/223) Token Standard.
+        1. [ERC-677](https://github.com/ethereum/EIPs/issues/677) `transferAndCall` Token Standard.
+        1. [ERC-827](https://github.com/ethereum/EIPs/issues/827) Token Standard.
+        1. Ethereum Name Service (ENS). https://ens.domains
+        1. Instagram -- What's the Image Resolution? https://help.instagram.com/1631821640426723
+        1. JSON Schema. https://json-schema.org/
+        1. Multiaddr. https://github.com/multiformats/multiaddr
+        1. RFC 2119 Key words for use in RFCs to Indicate Requirement Levels. https://www.ietf.org/rfc/rfc2119.txt
+
+        **Issues**
+
+        1. The Original ERC-721 Issue. https://github.com/ethereum/eips/issues/721
+        1. Solidity Issue \#2330 -- Interface Functions are External. https://github.com/ethereum/solidity/issues/2330
+        1. Solidity Issue \#3412 -- Implement Interface: Allow Stricter Mutability. https://github.com/ethereum/solidity/issues/3412
+        1. Solidity Issue \#3419 -- Interfaces Can't Inherit. https://github.com/ethereum/solidity/issues/3419
+        1. Solidity Issue \#3494 -- Compiler Incorrectly Reasons About the `selector` Function. https://github.com/ethereum/solidity/issues/3494
+        1. Solidity Issue \#3544 -- Cannot Calculate Selector of Function Named `transfer`. https://github.com/ethereum/solidity/issues/3544
+        1. CryptoKitties Bounty Issue \#4 -- Listing all Kitties Owned by a User is `O(n^2)`. https://github.com/axiomzen/cryptokitties-bounty/issues/4
+        1. OpenZeppelin Issue \#438 -- Implementation of `approve` method violates ERC20 standard. https://github.com/OpenZeppelin/zeppelin-solidity/issues/438
+        1. Solidity DelegateCallReturnValue Bug. https://solidity.readthedocs.io/en/develop/bugs.html#DelegateCallReturnValue
+
     </eip>
+
     """
 )

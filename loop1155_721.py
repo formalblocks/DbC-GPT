@@ -129,7 +129,7 @@ class SolcVerifyWrapper:
     @classmethod
     def call_solc(cls, file_path) -> VerificationResult:
         from subprocess import PIPE, run
-        command = [cls.SOLC_VERIFY_CMD, file_path]
+        command = [cls.SOLC_VERIFY_CMD, '--errors-only', file_path]
         result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         return VerificationResult(result.returncode, result.stdout + result.stderr)
     
@@ -206,8 +206,6 @@ loop(thread, """
     - for ERC721 interface erc721_interface.md (file-fM3pZzInzDIUcHCbn2kznwm7), and EIP markdown erc-721.md (file-qxLGK6Pnjq1oPzNYkQmk07r5) the expected specification should be this one: erc721_ref_spec.md (file-g9etf6hVTpRxveujQkVvdysA)
     - for ERC1155 interface erc1155_interface.md (file-qAHkhdXcxNUTlgszVabGfIDW) and EIP markdown erc-1155.md (file-nzCmYOTTTv0dX5JISGtHJiGF), please generate the specification.
 
-    *Note:* For the transfer function, when `msg.sender` is the same as `_to` the balance must not change
-
     ### Guidance for Generating Postconditions:
 
     1. **State Changes**: Consider how the state variables change. For example, ownership transfer should reflect changes in token ownership and balances.
@@ -215,7 +213,15 @@ loop(thread, """
     3. **Conditions on Input**: Reflect on how inputs affect the state variables. 
     4. **Reset Conditions**: Ensure that certain variables are reset after the function execution, if applicable.
 
-    Can you please generate a specification given the following ERC interface (delimited by token <interface>) and EIP markdown (delimited by token <eip>)?
+    *Note:* For the transfer function, when `msg.sender` is the same as `_to` the balance must not change
+
+    Can you please generate a specification given the following ERC interface (delimited by token <interface>)?
+
+    Remember to follow the same syntax of: erc20_ref_spec.md (file-8KXyHtZx5wdBLwLUFerN8xdP)
+    
+    Remember that logic implication must be represented using not and or connectives. The symbols '==>' or 'implies' are not supported.
+    
+    Remember that forall syntax is: forall (uint x) <expression using x>
         
     ERC interface:
 
@@ -226,20 +232,12 @@ loop(thread, """
 
         contract IERC1155  {
 
-            event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
-            event TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values);
-            event ApprovalForAll(address indexed account, address indexed operator, bool approved);
-            event URI(string value, uint256 indexed id);
-
             // Mapping from token ID to account balances
             mapping (uint256 => mapping(address => uint256)) private _balances;
 
             // Mapping from account to operator approvals
             mapping (address => mapping(address => bool)) private _operatorApprovals;
-
-            // Used as the URI for all token types by relying on ID substitution, e.g. https://token-cdn-domain/{id}.json
-            string private _uri;
-
+    
             function balanceOf(address account, uint256 id) public view   returns (uint256 balance);
             
             function balanceOfBatch(address[] memory accounts, uint256[] memory ids) public view returns (uint256[] memory batchBalances);

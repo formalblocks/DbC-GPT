@@ -213,8 +213,6 @@ loop(thread, """
     3. **Conditions on Input**: Reflect on how inputs affect the state variables. 
     4. **Reset Conditions**: Ensure that certain variables are reset after the function execution, if applicable.
 
-    *Note:* For the transfer function, when `msg.sender` is the same as `_to` the transfer has no effect.
-
     Can you please generate a specification given the following ERC interface (delimited by token <interface>) and EIP markdown (delimited by token <eip>)?
         
     ERC interface:
