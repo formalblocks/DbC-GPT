@@ -73,7 +73,8 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `account` cannot be the zero address.
      */
-     /// @notice postcondition _balances[id][account] == balance  
+     /// @notice postcondition _balances[id][account] == balance
+     /// @notice postcondition _balances[id][account] == balance
     function balanceOf(address account, uint256 id) public view   returns (uint256 balance) {
         require(account != address(0), "ERC1155: balance query for the zero address");
         return _balances[id][account];
@@ -101,14 +102,15 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 
         batchBalances = new uint256[](accounts.length);
 
+        
+        uint256 length = accounts.length;
         /// @notice invariant (batchBalances.length == ids.length && batchBalances.length == accounts.length)
-        /// @notice invariant j < accounts.length =>  i < accounts.length 
         /// @notice invariant (0 <= i && i <= accounts.length)
         /// @notice invariant (0 <= i && i <= ids.length)
         /// @notice invariant forall(uint k)  ids[k] == __verifier_old_uint(ids[k])
         /// @notice invariant forall (uint j) !(0 <= j && j < i && j < accounts.length ) || batchBalances[j] == _balances[ids[j]][accounts[j]]
-        for (uint256 i = 0; i < accounts.length; ++i) {
-            batchBalances[i] = balanceOf(accounts[i], ids[i]);
+        for (uint256 i = 0; i < length; ++i) {
+            batchBalances[i] = _balances[ids[i]][accounts[i]]; // Modified (extracted from balanceOf)
         }
 
         return batchBalances;

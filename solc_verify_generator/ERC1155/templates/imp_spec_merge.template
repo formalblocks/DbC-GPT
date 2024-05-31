@@ -99,8 +99,15 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 
         batchBalances = new uint256[](accounts.length);
 
-        for (uint256 i = 0; i < accounts.length; ++i) {
-            batchBalances[i] = balanceOf(accounts[i], ids[i]);
+        uint256 length = accounts.length;
+        /// @notice invariant (batchBalances.length == ids.length && batchBalances.length == accounts.length)
+        /// @notice invariant j < accounts.length =>  i < accounts.length 
+        /// @notice invariant (0 <= i && i <= accounts.length)
+        /// @notice invariant (0 <= i && i <= ids.length)
+        /// @notice invariant forall(uint k)  ids[k] == __verifier_old_uint(ids[k])
+        /// @notice invariant forall (uint j) !(0 <= j && j < i && j < accounts.length ) || batchBalances[j] == _balances[ids[j]][accounts[j]]
+        for (uint256 i = 0; i < length; ++i) {
+            batchBalances[i] = _balances[ids[i]][accounts[i]]; // Modified (extracted from balanceOf)
         }
 
         return batchBalances;

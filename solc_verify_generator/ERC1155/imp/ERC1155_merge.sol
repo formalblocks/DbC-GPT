@@ -103,14 +103,15 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 
         batchBalances = new uint256[](accounts.length);
 
+        uint256 length = accounts.length;
         /// @notice invariant (batchBalances.length == ids.length && batchBalances.length == accounts.length)
         /// @notice invariant j < accounts.length =>  i < accounts.length 
         /// @notice invariant (0 <= i && i <= accounts.length)
         /// @notice invariant (0 <= i && i <= ids.length)
         /// @notice invariant forall(uint k)  ids[k] == __verifier_old_uint(ids[k])
         /// @notice invariant forall (uint j) !(0 <= j && j < i && j < accounts.length ) || batchBalances[j] == _balances[ids[j]][accounts[j]]
-        for (uint256 i = 0; i < accounts.length; ++i) {
-            batchBalances[i] = balanceOf(accounts[i], ids[i]);
+        for (uint256 i = 0; i < length; ++i) {
+            batchBalances[i] = _balances[ids[i]][accounts[i]]; // Modified (extracted from balanceOf)
         }
 
         return batchBalances;
@@ -131,7 +132,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 
     ///@notice postcondition _operatorApprovals[account][operator] == approved 
 
-    function isApprovedForAll(address account, address operator) public view   returns (bool approved) {
+    function isApprovedForAll(address account, address operator) public view returns (bool approved) {
         return _operatorApprovals[account][operator];
     }
 
@@ -194,7 +195,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
      * acceptance magic value.
      */
-     /// @notice emits TransferSingle 
     function _safeTransferFrom(
         address from,
         address to,
@@ -231,7 +231,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155BatchReceived} and return the
      * acceptance magic value.
      */
-    /// @notice emits TransferBatch  
     function _safeBatchTransferFrom(
         address from,
         address to,
@@ -298,7 +297,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - If `account` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
      * acceptance magic value.
      */
-    /// @notice emits TransferSingle  
     function _mint(address account, uint256 id, uint256 amount, bytes memory data) internal  {
         require(account != address(0), "ERC1155: mint to the zero address");
 
@@ -321,7 +319,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155BatchReceived} and return the
      * acceptance magic value.
      */
-    /// @notice emits TransferBatch  
     function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal  {
         require(to != address(0), "ERC1155: mint to the zero address");
         require(ids.length == amounts.length, "ERC1155: ids and amounts length mismatch");
@@ -347,7 +344,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens of token type `id`.
      */
-    /// @notice emits TransferSingle  
     function _burn(address account, uint256 id, uint256 amount) internal  {
         require(account != address(0), "ERC1155: burn from the zero address");
 
@@ -369,7 +365,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `ids` and `amounts` must have the same length.
      */
-    /// @notice emits TransferBatch  
     function _burnBatch(address account, uint256[] memory ids, uint256[] memory amounts) internal  {
         require(account != address(0), "ERC1155: burn from the zero address");
         require(ids.length == amounts.length, "ERC1155: ids and amounts length mismatch");

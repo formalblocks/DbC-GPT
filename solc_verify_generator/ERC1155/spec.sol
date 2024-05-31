@@ -1,7 +1,3 @@
-// SPDX-License-Identifier: MIT
-
-pragma solidity >= 0.5.0;
-
 contract IERC1155  {
 
      /// @notice postcondition _balances[id][account] == balance  
