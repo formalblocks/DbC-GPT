@@ -164,7 +164,38 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
             _from == _msgSender() || isApprovedForAll(_from, _msgSender()),
             "ERC1155: transfer caller is not owner nor approved"
         );
-        _safeBatchTransferFrom(_from, _to, _ids, _values, _data);
+
+        address from = _from;
+        address to = _to;
+        uint256[] memory ids = _ids;
+        uint256[] memory amounts = _values;
+        bytes memory data = _data;
+         require(ids.length == amounts.length, "ERC1155: ids and amounts length mismatch");
+        require(to != address(0), "ERC1155: transfer to the zero address");
+
+        address operator = _msgSender();
+        
+        
+
+        _beforeTokenTransfer(operator, from, to, ids, amounts, data);
+        
+        /// @notice invariant (0 <= i && i <= ids.length)
+        /// @notice invariant forall(uint k) ids[k] == __verifier_old_uint(ids[k])
+        /// invariant !(_balances[ids[i]][from] >= amounts[i]) || _balances[ids[i]][from] == __verifier_old_uint(_balances[ids[i]][from]) - amounts[i]
+        /// invariant !(_balances[ids[i]][from] >= amounts[i]) || _balances[ids[i]][to] == __verifier_old_uint(_balances[ids[i]][to]) + amounts[i]
+        for (uint256 i = 0; i < ids.length; ++i) {
+            uint256 id = ids[i];
+            uint256 amount = amounts[i];
+
+            uint256 fromBalance = _balances[id][from];
+            require(fromBalance >= amount, "ERC1155: insufficient balance for transfer");
+            _balances[id][from] = fromBalance - amount;
+            _balances[id][to] += amount;
+        }
+
+        emit TransferBatch(operator, from, to, ids, amounts);
+
+        _doSafeBatchTransferAcceptanceCheck(operator, from, to, ids, amounts, data);
     }
 
     /**
