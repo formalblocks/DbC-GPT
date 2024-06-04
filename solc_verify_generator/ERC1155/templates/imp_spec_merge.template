@@ -215,6 +215,10 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155BatchReceived} and return the
      * acceptance magic value.
      */
+    ///@notice postcondition _operatorApprovals[from][msg.sender] || from == msg.sender
+    /// @notice postcondition to != address(0)
+    /// @notice postcondition forall (uint x) !( 0 <= x && x < ids.length ) || _balances[ids[x]][to] == __verifier_old_uint ( _balances[ids[x]][to] ) + amounts[x]
+    /// @notice postcondition forall (uint x) !( 0 <= x && x < ids.length ) || _balances[ids[x]][from] == __verifier_old_uint ( _balances[ids[x]][from] ) - amounts[x]
     function _safeBatchTransferFrom(
         address from,
         address to,
@@ -231,7 +235,11 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         address operator = _msgSender();
 
         _beforeTokenTransfer(operator, from, to, ids, amounts, data);
-
+        
+        /// @notice invariant (0 <= i && i <= ids.length)
+        /// @notice invariant forall(uint k) ids[k] == __verifier_old_uint(ids[k])
+        /// invariant !(_balances[ids[i]][from] >= amounts[i]) || _balances[ids[i]][from] == __verifier_old_uint(_balances[ids[i]][from]) - amounts[i]
+        /// invariant !(_balances[ids[i]][from] >= amounts[i]) || _balances[ids[i]][to] == __verifier_old_uint(_balances[ids[i]][to]) + amounts[i]
         for (uint256 i = 0; i < ids.length; ++i) {
             uint256 id = ids[i];
             uint256 amount = amounts[i];
