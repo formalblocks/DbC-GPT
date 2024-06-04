@@ -241,44 +241,31 @@ def run_verification_process():
 
             ERC interface example:
             ```solidity
-                pragma solidity >=0.5.0;
-                
-                contract ERC721 {
+                contract ERC1155  {
+                    /// @notice postcondition _balances[_id][_owner] == balance  
+                    function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance);
                     
-                    /// @notice postcondition _ownedTokensCount[_owner] == balance
-                    function balanceOf(address _owner) public view returns (uint256 balance);
-                    
-                    /// @notice postcondition _tokenOwner[_tokenId] == _owner
-                    /// @notice postcondition  _owner !=  address(0)
-                    function ownerOf(uint256 _tokenId) public view returns (address owner);
+                    /// @notice postcondition batchBalances.length == _owners.length 
+                    /// @notice postcondition batchBalances.length == _ids.length
+                    /// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
+                    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) public view returns (uint256[] memory batchBalances);
 
-                    /// @notice postcondition _tokenApprovals[_tokenId] == _approved 
-                    function approve(address _approved, uint256 _tokenId) external;
-                    
-                    /// @notice postcondition _tokenOwner[tokenId] != address(0)
-                    /// @notice postcondition _tokenApprovals[tokenId] == approved
-                    function getApproved(uint256 _tokenId) external view returns (address approved);
+                    /// @notice  postcondition _operatorApprovals[msg.sender][_operator] ==  _approved 
+                    function setApprovalForAll(address _operator, bool _approved) public;
 
-                    /// @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
-                    function setApprovalForAll(address _operator, bool _approved) external;
-                    
                     /// @notice postcondition _operatorApprovals[_owner][_operator] == approved
-                    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+                    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved);
 
-                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _owned_kensCount[to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
-                    /// @notice  postcondition  _tokenOwner[_tokenId] == _to
-                    function transferFrom(address _from, address _to, uint256 _tokenId) external;
-                    
-                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _ownedTokensCount[_to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
-                    /// @notice  postcondition  _tokenOwner[_tokenId] == to
-                    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+                    /// @notice postcondition _to != address(0) 
+                    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+                    /// @notice postcondition __verifier_old_uint ( _balances[_id][_from] ) >= _value    
+                    /// @notice postcondition _balances[_id][_from] == __verifier_old_uint ( _balances[_id][_from] ) - _value
+                    /// @notice postcondition _balances[_id][_to] == __verifier_old_uint ( _balances[_id][_to] ) + _value
+                    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
 
-                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _ownedTokensCount[_to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
-                    /// @notice  postcondition  _tokenOwner[_tokenId] == _to
-                    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+                    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+                    /// @notice postcondition _to != address(0)
+                    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data) public;
                 }
             ```
                     
@@ -540,4 +527,4 @@ def run_verification_process():
     return results
 
 verification_results = run_verification_process()
-Utils.save_results_to_csv("erc20_[20_721].csv", verification_results)
+Utils.save_results_to_csv("erc20_[20_1155].csv", verification_results)

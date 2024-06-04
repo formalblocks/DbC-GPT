@@ -241,7 +241,7 @@ def run_verification_process():
                       
             ERC interface example:
             ```solidity
-                contract IERC1155  {
+                contract ERC1155  {
                     /// @notice postcondition _balances[_id][_owner] == balance  
                     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance);
                     
@@ -276,7 +276,7 @@ def run_verification_process():
             ```solidity
                 pragma solidity >= 0.5.0;
 
-                contract IERC1155  {
+                contract ERC1155  {
 
                     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
                     event TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values);
