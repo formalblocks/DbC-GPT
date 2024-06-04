@@ -241,6 +241,8 @@ def run_verification_process():
                       
             ERC interface example:
             ```solidity
+                pragma solidity >=0.5.0;
+                
                 contract ERC20 {
 
                     mapping (address => uint) _balances;

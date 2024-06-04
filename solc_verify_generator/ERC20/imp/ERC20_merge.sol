@@ -39,37 +39,39 @@ contract ERC20 is IERC20 {
 
     /**
      * @dev Gets the balance of the specified address.
-     * @param owner The address to query the balance of.
+     * @param _owner The address to query the balance of.
      * @return A uint256 representing the amount owned by the passed address.
      */
-    ///@notice postcondition _balances[owner] == balance
+    ///@notice postcondition balance == _balances[_owner]
 
-    function balanceOf(address owner)  public view returns (uint256 balance) {
-        return _balances[owner];
+    function balanceOf(address _owner)  public view returns (uint256 balance) {
+        return _balances[_owner];
     }
 
     /**
-     * @dev Function to check the amount of tokens that an owner allowed to a spender.
-     * @param owner address The address which owns the funds.
-     * @param spender address The address which will spend the funds.
-     * @return A uint256 specifying the amount of tokens still available for the spender.
+     * @dev Function to check the amount of tokens that an _owner allowed to a _spender.
+     * @param _owner address The address which owns the funds.
+     * @param _spender address The address which will spend the funds.
+     * @return A uint256 specifying the amount of tokens still available for the _spender.
      */
-    ///@notice postcondition _allowed[owner][spender] == remaining
+    ///@notice postcondition remaining == _allowed[_owner][_spender]
 
-    function allowance(address owner, address spender)  public view returns (uint256 remaining) {
-        return _allowed[owner][spender];
+    function allowance(address _owner, address _spender)  public view returns (uint256 remaining) {
+        return _allowed[_owner][_spender];
     }
 
     /**
-     * @dev Transfer token to a specified address.
-     * @param to The address to transfer to.
-     * @param value The amount to be transferred.
+     * @dev Transfer token _to a specified address.
+     * @param _to The address _to transfer _to.
+     * @param _value The amount _to be transferred.
      */
-    ///@notice postcondition ( ( _balances[msg.sender] ==  __verifier_old_uint (_balances[msg.sender] ) - value  && msg.sender  != to ) ||   ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender]) && msg.sender  == to ) &&  success )   || !success
-/// @notice postcondition ( ( _balances[to] ==  __verifier_old_uint ( _balances[to] ) + value  && msg.sender  != to ) ||   ( _balances[to] ==  __verifier_old_uint ( _balances[to] ) && msg.sender  == to )  )   || !success
+    ///@notice postcondition _balances[msg.sender] == __verifier_old_uint(_balances[msg.sender]) - _value
+/// @notice postcondition _balances[_to] == __verifier_old_uint(_balances[_to]) + _value
+/// @notice postcondition _balances[msg.sender] >= _value
+/// @notice postcondition _to != address(0)
 
-    function transfer(address to, uint256 value)  public returns (bool success) {
-        _transfer(msg.sender, to, value);
+    function transfer(address _to, uint256 _value)  public returns (bool success) {
+        _transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -80,31 +82,32 @@ contract ERC20 is IERC20 {
      * race condition is to first reduce the spender's allowance to 0 and set the desired value afterwards:
      * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
      * @param spender The address which will spend the funds.
-     * @param value The amount of tokens to be spent.
+     * @param _value The amount of tokens to be spent.
      */
-    ///@notice postcondition (_allowed[msg.sender ][ spender] ==  value  &&  success) || ( _allowed[msg.sender ][ spender] ==  __verifier_old_uint ( _allowed[msg.sender ][ spender] ) && !success )    
+    ///@notice postcondition _allowed[msg.sender][_spender] == _value
+/// @notice postcondition _spender != address(0)
 
-    function approve(address spender, uint256 value)  public returns (bool success) {
-        _approve(msg.sender, spender, value);
+    function approve(address _spender, uint256 _value)  public returns (bool success) {
+        _approve(msg.sender, _spender, _value);
         return true;
     }
 
     /**
-     * @dev Transfer tokens from one address to another.
+     * @dev Transfer tokens _from one address to another.
      * Note that while this function emits an Approval event, this is not required as per the specification,
      * and other compliant implementations may not emit the event.
-     * @param from address The address which you want to send tokens from
+     * @param _from address The address which you want to send tokens _from
      * @param to address The address which you want to transfer to
      * @param value uint256 the amount of tokens to be transferred
      */
-    ///@notice postcondition ( ( _balances[from] ==  __verifier_old_uint (_balances[from] ) - value  &&  from  != to ) || ( _balances[from] ==  __verifier_old_uint ( _balances[from] ) &&  from == to ) && success ) || !success 
-/// @notice postcondition ( ( _balances[to] ==  __verifier_old_uint ( _balances[to] ) + value  &&  from  != to ) || ( _balances[to] ==  __verifier_old_uint ( _balances[to] ) &&  from  == to ) && success ) || !success 
-/// @notice postcondition ( _allowed[from ][msg.sender] ==  __verifier_old_uint (_allowed[from ][msg.sender] ) - value && success) || ( _allowed[from ][msg.sender] ==  __verifier_old_uint (_allowed[from ][msg.sender]) && !success) ||  from  == msg.sender
-/// @notice postcondition  _allowed[from ][msg.sender]  <= __verifier_old_uint (_allowed[from ][msg.sender] ) ||  from  == msg.sender
+    ///@notice postcondition _balances[_from] == __verifier_old_uint(_balances[_from]) - _value
+/// @notice postcondition _balances[_to] == __verifier_old_uint(_balances[_to]) + _value
+/// @notice postcondition _allowed[_from][msg.sender] == __verifier_old_uint(_allowed[_from][msg.sender]) - _value
+/// @notice postcondition _from != address(0) && _to != address(0)
 
-    function transferFrom(address from, address to, uint256 value)  public returns (bool success) {
-        _transfer(from, to, value);
-        _approve(from, msg.sender, _allowed[from][msg.sender].sub(value));
+    function transferFrom(address _from, address _to, uint256 _value)  public returns (bool success) {
+        _transfer(_from, _to, _value);
+        _approve(_from, msg.sender, _allowed[_from][msg.sender].sub(_value));
         return true;
     }
 

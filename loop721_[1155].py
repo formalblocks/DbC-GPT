@@ -213,7 +213,7 @@ def loop(thread: Thread, message: str) -> bool:
 
 def run_verification_process():
     results = []
-    for i in range(10):
+    for i in range(5):
         global interaction_counter
         global verification_status
         
@@ -241,49 +241,42 @@ def run_verification_process():
                       
             ERC interface example:
             ```solidity
-                pragma solidity >=0.5.0;
-                
-                contract ERC20 {
+                contract IERC1155  {
+                    /// @notice postcondition _balances[_id][_owner] == balance  
+                    function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance);
+                    
+                    /// @notice postcondition batchBalances.length == _owners.length 
+                    /// @notice postcondition batchBalances.length == _ids.length
+                    /// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
+                    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) public view returns (uint256[] memory batchBalances);
 
-                    mapping (address => uint) _balances;
-                    mapping (address => mapping (address => uint)) _allowed;
-                    uint public _totalSupply;
+                    /// @notice  postcondition _operatorApprovals[msg.sender][_operator] ==  _approved 
+                    function setApprovalForAll(address _operator, bool _approved) public;
 
-                    event Transfer(address indexed _from, address indexed _to, uint _value);
-                    event Approval(address indexed _owner, address indexed _spender, uint _value);
+                    /// @notice postcondition _operatorApprovals[_owner][_operator] == approved
+                    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved);
 
-                    /// @notice postcondition supply == _totalSupply
-                    function totalSupply() public view returns (uint256 supply);
+                    /// @notice postcondition _to != address(0) 
+                    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+                    /// @notice postcondition __verifier_old_uint ( _balances[_id][_from] ) >= _value    
+                    /// @notice postcondition _balances[_id][_from] == __verifier_old_uint ( _balances[_id][_from] ) - _value
+                    /// @notice postcondition _balances[_id][_to] == __verifier_old_uint ( _balances[_id][_to] ) + _value
+                    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
 
-                    /// @notice  postcondition ( ( _balances[msg.sender] ==  __verifier_old_uint (_balances[msg.sender] ) - _value  && msg.sender  != _to ) ||   ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender]) && msg.sender  == _to ) &&  success )   || !success
-                    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  && msg.sender  != _to ) ||   ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) && msg.sender  == _to )  )   || !success
-                    function transfer(address _to, uint256 _value) public returns (bool success);
-
-                    /// @notice  postcondition ( ( _balances[_from] ==  __verifier_old_uint (_balances[_from] ) - _value  &&  _from  != _to ) || ( _balances[_from] ==  __verifier_old_uint ( _balances[_from] ) &&  _from == _to ) && success ) || !success 
-                    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  &&  _from  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) &&  _from  == _to ) && success ) || !success 
-                    /// @notice  postcondition ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender] ) - _value && success) || ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender]) && !success) ||  _from  == msg.sender
-                    /// @notice  postcondition  _allowed[_from ][msg.sender]  <= __verifier_old_uint (_allowed[_from ][msg.sender] ) ||  _from  == msg.sender
-                    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
-
-                    /// @notice  postcondition (_allowed[msg.sender ][ _spender] ==  _value  &&  success) || ( _allowed[msg.sender ][ _spender] ==  __verifier_old_uint ( _allowed[msg.sender ][ _spender] ) && !success )    
-                    function approve(address _spender, uint256 _value) public returns (bool success);
-
-                    /// @notice postcondition _balances[_owner] == balance
-                    function balanceOf(address _owner) public view returns (uint256 balance);
-
-                    /// @notice postcondition _allowed[_owner][_spender] == remaining
-                    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
+                    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+                    /// @notice postcondition _to != address(0)
+                    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data) public;
                 }
             ```
             
             Can you please generate a specification given the following ERC interface (delimited by token ```solidity ```) and EIP markdown (delimited by token <eip>)?
                       
-            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE ERC20 EXAMPLE ABOVE:
+            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE ERC1155 EXAMPLE ABOVE:
 
             ```solidity
                 pragma solidity >=0.5.0;
 
-                contract IERC721 {
+                contract ERC721 {
 
                     bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
 
@@ -817,4 +810,4 @@ def run_verification_process():
     return results
 
 verification_results = run_verification_process()
-Utils.save_results_to_csv("erc721_[20].csv", verification_results)
+Utils.save_results_to_csv("erc721_[1155].csv", verification_results)

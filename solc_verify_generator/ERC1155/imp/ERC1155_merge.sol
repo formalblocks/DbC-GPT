@@ -87,9 +87,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `accounts` and `ids` must have the same length.
      */
-    ///@notice postcondition _owners.length == _ids.length
-/// @notice postcondition batchBalances.length == _owners.length
-/// @notice postcondition forall (uint i) !(0 <= i && i < _owners.length) || _balances[_ids[i]][_owners[i]] == batchBalances[i]
+    ///@notice postcondition batchBalances.length == _owners.length
+/// @notice postcondition batchBalances.length == _ids.length
+/// @notice postcondition forall (uint x) !(0 <= x && x < batchBalances.length) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
 
     function balanceOfBatch(
         address[] memory _owners,
@@ -121,7 +121,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * @dev See {IERC1155-setApprovalForAll}.
      */
     ///@notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
-/// @notice postcondition _approved == true || _approved == false
 
     function setApprovalForAll(address _operator, bool _approved) public   {
         require(_msgSender() != _operator, "ERC1155: setting approval status for self");
@@ -136,9 +135,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         return _operatorApprovals[_owner][_operator];
     }
 
-    ///@notice postcondition _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - _value
-/// @notice postcondition _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value
-/// @notice postcondition _to != address(0)
+    ///@notice postcondition _to != address(0)
+/// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+/// @notice postcondition __verifier_old_uint(_balances[_id][_from]) >= _value
 
     function safeTransferFrom(
         address _from,
@@ -158,10 +157,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         _safeTransferFrom(_from, _to, _id, _value, _data);
     }
 
-    ///@notice postcondition _ids.length == _values.length
-/// @notice postcondition forall (uint i) !(0 <= i && i < _ids.length) || _balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i]
-/// @notice postcondition forall (uint i) !(0 <= i && i < _ids.length) || _balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i]
-/// @notice postcondition _to != address(0)
+    ///@notice postcondition _to != address(0)
+/// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+/// @notice postcondition _ids.length == _values.length
 
     function safeBatchTransferFrom(
         address _from,

@@ -275,10 +275,40 @@ def run_verification_process():
                     function allowance(address _owner, address _spender) public view returns (uint256 remaining);
                 }
             ```
+                      
+            ERC interface example:
+            ```solidity
+                contract IERC1155  {
+                    /// @notice postcondition _balances[_id][_owner] == balance  
+                    function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance);
+                    
+                    /// @notice postcondition batchBalances.length == _owners.length 
+                    /// @notice postcondition batchBalances.length == _ids.length
+                    /// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
+                    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) public view returns (uint256[] memory batchBalances);
+
+                    /// @notice  postcondition _operatorApprovals[msg.sender][_operator] ==  _approved 
+                    function setApprovalForAll(address _operator, bool _approved) public;
+
+                    /// @notice postcondition _operatorApprovals[_owner][_operator] == approved
+                    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved);
+
+                    /// @notice postcondition _to != address(0) 
+                    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+                    /// @notice postcondition __verifier_old_uint ( _balances[_id][_from] ) >= _value    
+                    /// @notice postcondition _balances[_id][_from] == __verifier_old_uint ( _balances[_id][_from] ) - _value
+                    /// @notice postcondition _balances[_id][_to] == __verifier_old_uint ( _balances[_id][_to] ) + _value
+                    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
+
+                    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+                    /// @notice postcondition _to != address(0)
+                    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data) public;
+                }
+            ```
             
             Can you please generate a specification given the following ERC interface (delimited by token ```solidity ```) and EIP markdown (delimited by token <eip>)?
                       
-            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE ERC20 EXAMPLE ABOVE:
+            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE EXAMPLES ABOVE:
 
             ```solidity
                 pragma solidity >=0.5.0;
@@ -817,4 +847,4 @@ def run_verification_process():
     return results
 
 verification_results = run_verification_process()
-Utils.save_results_to_csv("erc721_[20].csv", verification_results)
+Utils.save_results_to_csv("erc721_[20_1155].csv", verification_results)
