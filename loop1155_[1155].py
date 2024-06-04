@@ -263,8 +263,8 @@ def run_verification_process():
                     /// @notice postcondition _balances[_id][_to] == __verifier_old_uint ( _balances[_id][_to] ) + _value
                     function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
 
-                    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
-                    /// @notice postcondition _to != address(0)
+                    ///@notice postcondition forall (uint i) !(0 <= i && i < _ids.length && _from != _to) || (_balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i])
+                    ///@notice postcondition forall (uint i) !(0 <= i && i < _ids.length && _from != _to) || (_balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i])
                     function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data) public;
                 }
             ```
