@@ -302,7 +302,7 @@ def run_verification_process():
                     * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
                     */
                     $ADD POSTCONDITION HERE
-                    function transfer(address to, uint value) public returns (bool success);
+                    function transfer(address _to, uint _value) public returns (bool success);
 
                     /**
                     * Transfers `_value` amount of tokens from address `_from` to address `_to`, and MUST fire the `Transfer` event.
@@ -312,25 +312,25 @@ def run_verification_process():
                     * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
                     */
                     $ADD POSTCONDITION HERE
-                    function transferFrom(address from, address to, uint value) public returns (bool success);
+                    function transferFrom(address _from, address _to, uint _value) public returns (bool success);
 
                     /**
                     * Allows `_spender` to withdraw from your account multiple times, up to the `_value` amount. If this function is called again it overwrites the current allowance with `_value`.
                     */
                     $ADD POSTCONDITION HERE
-                    function approve(address spender, uint value) public returns (bool success);
+                    function approve(address _spender, uint _value) public returns (bool success);
 
                     /**
                     * Returns the account balance of another account with address `_owner`.
                     */
                     $ADD POSTCONDITION HERE
-                    function balanceOf(address owner) public view returns (uint balance);
+                    function balanceOf(address _owner) public view returns (uint balance);
 
                     /**
                     * Returns the amount which `_spender` is still allowed to withdraw from `_owner`.
                     */
                     $ADD POSTCONDITION HERE
-                    function allowance(address owner, address spender) public view returns (uint remaining);
+                    function allowance(address _owner, address _spender) public view returns (uint remaining);
                 }
             ```
             
