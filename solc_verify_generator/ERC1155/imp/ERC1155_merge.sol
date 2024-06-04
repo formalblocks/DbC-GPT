@@ -73,11 +73,11 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `account` cannot be the zero address.
      */
-    ///@notice postcondition _balances[id][account] == balance  
+    ///@notice postcondition _balances[_id][_owner] == balance
 
-    function balanceOf(address account, uint256 id) public view   returns (uint256 balance) {
-        require(account != address(0), "ERC1155: balance query for the zero address");
-        return _balances[id][account];
+    function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance) {
+        require(_owner != address(0), "ERC1155: balance query for the zero address");
+        return _balances[_id][_owner];
     }
 
     /**
@@ -87,31 +87,31 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `accounts` and `ids` must have the same length.
      */
-    ///@notice postcondition batchBalances.length == accounts.length 
-/// @notice postcondition batchBalances.length == ids.length
-/// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[ids[x]][accounts[x]]  
+    ///@notice postcondition _owners.length == _ids.length
+/// @notice postcondition batchBalances.length == _owners.length
+/// @notice postcondition forall (uint i) !(0 <= i && i < _owners.length) || _balances[_ids[i]][_owners[i]] == batchBalances[i]
 
     function balanceOfBatch(
-        address[] memory accounts,
-        uint256[] memory ids
+        address[] memory _owners,
+        uint256[] memory _ids
     )
         public
         view
         returns (uint256[] memory batchBalances)
     {
-        require(accounts.length == ids.length, "ERC1155: accounts and ids length mismatch");
+        require(_owners.length == _ids.length, "ERC1155: _owners and _ids length mismatch");
 
-        batchBalances = new uint256[](accounts.length);
+        batchBalances = new uint256[](_owners.length);
 
-        uint256 length = accounts.length;
-        /// @notice invariant (batchBalances.length == ids.length && batchBalances.length == accounts.length)
-        /// @notice invariant j < accounts.length =>  i < accounts.length 
-        /// @notice invariant (0 <= i && i <= accounts.length)
-        /// @notice invariant (0 <= i && i <= ids.length)
-        /// @notice invariant forall(uint k)  ids[k] == __verifier_old_uint(ids[k])
-        /// @notice invariant forall (uint j) !(0 <= j && j < i && j < accounts.length ) || batchBalances[j] == _balances[ids[j]][accounts[j]]
+        uint256 length = _owners.length;
+        /// @notice invariant (batchBalances.length == _ids.length && batchBalances.length == _owners.length)
+        /// @notice invariant j < _owners.length =>  i < _owners.length 
+        /// @notice invariant (0 <= i && i <= _owners.length)
+        /// @notice invariant (0 <= i && i <= _ids.length)
+        /// @notice invariant forall(uint k)  _ids[k] == __verifier_old_uint(_ids[k])
+        /// @notice invariant forall (uint j) !(0 <= j && j < i && j < _owners.length ) || batchBalances[j] == _balances[_ids[j]][_owners[j]]
         for (uint256 i = 0; i < length; ++i) {
-            batchBalances[i] = _balances[ids[i]][accounts[i]]; // Modified (extracted from balanceOf)
+            batchBalances[i] = _balances[_ids[i]][_owners[i]]; // Modified (extracted from balanceOf)
         }
 
         return batchBalances;
@@ -120,67 +120,63 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     /**
      * @dev See {IERC1155-setApprovalForAll}.
      */
-    ///@notice  postcondition _operatorApprovals[msg.sender][operator] ==  approved 
-/// @notice  emits  ApprovalForAll 
+    ///@notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+/// @notice postcondition _approved == true || _approved == false
 
-    function setApprovalForAll(address operator, bool approved) public   {
-        require(_msgSender() != operator, "ERC1155: setting approval status for self");
+    function setApprovalForAll(address _operator, bool _approved) public   {
+        require(_msgSender() != _operator, "ERC1155: setting approval status for self");
 
-        _operatorApprovals[_msgSender()][operator] = approved;
-        emit ApprovalForAll(_msgSender(), operator, approved);
+        _operatorApprovals[_msgSender()][_operator] = _approved;
+        emit ApprovalForAll(_msgSender(), _operator, _approved);
     }
 
-    ///@notice postcondition _operatorApprovals[account][operator] == approved 
+    ///@notice postcondition _operatorApprovals[_owner][_operator] == approved
 
-    function isApprovedForAll(address account, address operator) public view returns (bool approved) {
-        return _operatorApprovals[account][operator];
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+        return _operatorApprovals[_owner][_operator];
     }
 
-    ///@notice precondition from != msg.sender
-/// @notice precondition !_operatorApprovals[from][msg.sender]
-/// @notice postcondition to != address(0) 
-/// @notice postcondition _operatorApprovals[from][msg.sender] || from == msg.sender
-/// @notice postcondition __verifier_old_uint ( _balances[id][from] ) >= amount    
-/// @notice postcondition _balances[id][from] == __verifier_old_uint ( _balances[id][from] ) - amount
-/// @notice postcondition _balances[id][to] == __verifier_old_uint ( _balances[id][to] ) + amount
-/// @notice emits TransferSingle 
+    ///@notice postcondition _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - _value
+/// @notice postcondition _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value
+/// @notice postcondition _to != address(0)
 
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _value,
+        bytes memory _data
     )
         public
         
         
     {
         require(
-            from == _msgSender() || isApprovedForAll(from, _msgSender()),
+            _from == _msgSender() || isApprovedForAll(_from, _msgSender()),
             "ERC1155: caller is not owner nor approved"
         );
-        _safeTransferFrom(from, to, id, amount, data);
+        _safeTransferFrom(_from, _to, _id, _value, _data);
     }
 
-    ///@notice postcondition _operatorApprovals[from][msg.sender] || from == msg.sender
-/// @notice postcondition to != address(0)
-/// @notice emits TransferBatch  
+    ///@notice postcondition _ids.length == _values.length
+/// @notice postcondition forall (uint i) !(0 <= i && i < _ids.length) || _balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i]
+/// @notice postcondition forall (uint i) !(0 <= i && i < _ids.length) || _balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i]
+/// @notice postcondition _to != address(0)
 
     function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
+        address _from,
+        address _to,
+        uint256[] memory _ids,
+        uint256[] memory _values,
+        bytes memory _data
     )
         public
     {
         require(
-            from == _msgSender() || isApprovedForAll(from, _msgSender()),
+            _from == _msgSender() || isApprovedForAll(_from, _msgSender()),
             "ERC1155: transfer caller is not owner nor approved"
         );
-        _safeBatchTransferFrom(from, to, ids, amounts, data);
+        _safeBatchTransferFrom(_from, _to, _ids, _values, _data);
     }
 
     /**

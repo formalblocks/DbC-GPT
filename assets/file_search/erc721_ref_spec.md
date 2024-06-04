@@ -5,8 +5,6 @@ pragma solidity >=0.5.0 <0.9.0;
  * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
  */
 contract IERC721 {
-  
-
     /// @notice postcondition _ownedTokensCount[owner] == balance
     function balanceOf(address owner) public view returns (uint256 balance);
     /// @notice postcondition _tokenOwner[tokenId] == _owner

@@ -38,110 +38,88 @@ contract ERC721 is ERC165 {
         _registerInterface(_INTERFACE_ID_ERC721);
     }
 
-     /// @notice postcondition _ownedTokensCount[owner] == balance
-    ///@notice postcondition _ownedTokensCount[owner] == balance
+    ///@notice postcondition _owner != address(0)
+///@notice postcondition balance == _ownedTokensCount[_owner]
 
-    function balanceOf(address owner) public view returns (uint256 balance) {
-        require(owner != address(0));
-        return _ownedTokensCount[owner];
+    function balanceOf(address _owner) public view returns (uint256 balance) {
+        require(_owner != address(0));
+        return _ownedTokensCount[_owner];
     }
 
-     /// @notice postcondition _tokenOwner[tokenId] == _owner
-     /// @notice postcondition  _owner !=  address(0)
-    ///@notice postcondition _tokenOwner[tokenId] == _owner
-/// @notice postcondition  _owner !=  address(0)
+    ///@notice postcondition _owner != address(0)
+///@notice postcondition _tokenOwner[_tokenId] == _owner
 
-    function ownerOf(uint256 tokenId) public view returns (address _owner) {
-        address owner = _tokenOwner[tokenId];
+    function ownerOf(uint256 _tokenId) public view returns (address _owner) {
+        address owner = _tokenOwner[_tokenId];
         require(owner != address(0));
         return owner;
     }
    
-    /// @notice postcondition _tokenApprovals[tokenId] == to 
-    /// @notice emits Approval
-    ///@notice postcondition _tokenApprovals[tokenId] == to 
-/// @notice emits Approval
+    ///@notice postcondition _tokenApprovals[_tokenId] == _approved
+///@notice postcondition _approved == address(0) || _tokenOwner[_tokenId] != address(0)
 
-    function approve(address to, uint256 tokenId) public {
-        address owner = ownerOf(tokenId);
-        require(to != owner);
+    function approve(address _approved, uint256 _tokenId) public {
+        address owner = ownerOf(_tokenId);
+        require(_approved != owner);
         require(msg.sender == owner || isApprovedForAll(owner, msg.sender));
 
-        _tokenApprovals[tokenId] = to;
-        emit Approval(owner, to, tokenId);
+        _tokenApprovals[_tokenId] = _approved;
+        emit Approval(owner, _approved, _tokenId);
     }
 
 
-    /// @notice postcondition _tokenOwner[tokenId] != address(0)
-    /// @notice postcondition _tokenApprovals[tokenId] == approved
-    ///@notice postcondition _tokenOwner[tokenId] != address(0)
-/// @notice postcondition _tokenApprovals[tokenId] == approved
+    ///@notice postcondition approved == _tokenApprovals[_tokenId]
 
-    function getApproved(uint256 tokenId) public view returns (address approved) {
-        require(_exists(tokenId));
-        return _tokenApprovals[tokenId];
+    function getApproved(uint256 _tokenId) public view returns (address approved) {
+        require(_exists(_tokenId));
+        return _tokenApprovals[_tokenId];
+    }
+
+    ///@notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+///@notice postcondition _approved == true || _approved == false
+
+    function setApprovalForAll(address _operator, bool _approved) public {
+        require(_operator != msg.sender);
+        _operatorApprovals[msg.sender][_operator] = _approved;
+        emit ApprovalForAll(msg.sender, _operator, _approved);
+    }
+
+    ///@notice postcondition approved == _operatorApprovals[_owner][_operator]
+
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+        return _operatorApprovals[_owner][_operator];
     }
 
 
-    /// @notice postcondition _operatorApprovals[msg.sender][to] == approved
-    /// @notice emits ApprovalForAll
-    ///@notice postcondition _operatorApprovals[msg.sender][to] == approved
-/// @notice emits ApprovalForAll
+    ///@notice postcondition _tokenOwner[_tokenId] == _to
+///@notice postcondition _ownedTokensCount[_from] == _ownedTokensCount[_from] - 1
+///@notice postcondition _ownedTokensCount[_to] == _ownedTokensCount[_to] + 1
+///@notice postcondition _tokenApprovals[_tokenId] == address(0)
+///@notice postcondition _from != _to || _ownedTokensCount[_from] == _ownedTokensCount[_from]
 
-    function setApprovalForAll(address to, bool approved) public {
-        require(to != msg.sender);
-        _operatorApprovals[msg.sender][to] = approved;
-        emit ApprovalForAll(msg.sender, to, approved);
-    }
-
-    /// @notice postcondition _operatorApprovals[owner][operator] == approved
-    ///@notice postcondition _operatorApprovals[owner][operator] == approved
-
-    function isApprovedForAll(address owner, address operator) public view returns (bool approved) {
-        return _operatorApprovals[owner][operator];
-    }
-
-
-    /// @notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-    /// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-    /// @notice  postcondition  _tokenOwner[tokenId] == to
-    /// @notice  emits Transfer
-    ///@notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-/// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-/// @notice  postcondition  _tokenOwner[tokenId] == to
-/// @notice  emits Transfer
-
-    function transferFrom(address from, address to, uint256 tokenId) public {
-        require(_isApprovedOrOwner(msg.sender, tokenId));
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+        require(_isApprovedOrOwner(msg.sender, _tokenId));
        
-        _transferFrom(from, to, tokenId);
+        _transferFrom(_from, _to, _tokenId);
     }
 
-    /// @notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-    /// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-    /// @notice  postcondition  _tokenOwner[tokenId] == to
-    /// @notice  emits  Transfer
-    ///@notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-/// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-/// @notice  postcondition  _tokenOwner[tokenId] == to
-/// @notice  emits  Transfer
+    ///@notice postcondition _tokenOwner[_tokenId] == _to
+///@notice postcondition _ownedTokensCount[_from] == _ownedTokensCount[_from] - 1
+///@notice postcondition _ownedTokensCount[_to] == _ownedTokensCount[_to] + 1
+///@notice postcondition _tokenApprovals[_tokenId] == address(0)
 
-    function safeTransferFrom(address from, address to, uint256 tokenId) public {
-        safeTransferFrom(from, to, tokenId, "");
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+        safeTransferFrom(_from, _to, _tokenId, "");
     }
 
-    /// @notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-    /// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-    /// @notice  postcondition  _tokenOwner[tokenId] == to
-    /// @notice  emits  Transfer
-    ///@notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-/// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-/// @notice  postcondition  _tokenOwner[tokenId] == to
-/// @notice  emits  Transfer
+    ///@notice postcondition _tokenOwner[_tokenId] == _to
+///@notice postcondition _ownedTokensCount[_from] == _ownedTokensCount[_from] - 1
+///@notice postcondition _ownedTokensCount[_to] == _ownedTokensCount[_to] + 1
+///@notice postcondition _tokenApprovals[_tokenId] == address(0)
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
-        transferFrom(from, to, tokenId);
-        require(_checkOnERC721Received(from, to, tokenId, _data));
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+        transferFrom(_from, _to, _tokenId);
+        require(_checkOnERC721Received(_from, _to, _tokenId, _data));
     }
 
    
@@ -156,7 +134,6 @@ contract ERC721 is ERC165 {
         return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
     }
 
-    /// @notice  emits  Transfer
     function _mint(address to, uint256 tokenId) internal {
         require(to != address(0));
         require(!_exists(tokenId));
@@ -167,7 +144,6 @@ contract ERC721 is ERC165 {
         emit Transfer(address(0), to, tokenId);
     }
 
-    /// @notice  emits  Transfer
     function _burn(address owner, uint256 tokenId) internal {
         require(ownerOf(tokenId) == owner);
 
@@ -179,13 +155,11 @@ contract ERC721 is ERC165 {
         emit Transfer(owner, address(0), tokenId);
     }
 
-    /// @notice  emits  Transfer
     function _burn(uint256 tokenId) internal {
         _burn(ownerOf(tokenId), tokenId);
     }
 
    
-    /// @notice  emits  Transfer
     function _transferFrom(address from, address to, uint256 tokenId) internal {
         require(ownerOf(tokenId) == from);
         require(to != address(0));

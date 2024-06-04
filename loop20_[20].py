@@ -183,8 +183,12 @@ def loop(thread: Thread, message: str) -> bool:
     if not solidity_code:
         print("ERROR - No Solidity code found in the response.")
         return False
-
-    verification_result: VerificationResult = SolcVerifyWrapper.verify(solidity_code)
+    try:
+        # Add error handling
+        verification_result: VerificationResult = SolcVerifyWrapper.verify(solidity_code)
+    except Exception as e:
+        print(f"An error occurred during verification: {e}")
+        return False
 
     if verification_result.status:
         global verification_status
@@ -234,53 +238,47 @@ def run_verification_process():
             - State Changes: Reflect how state variables change. For example, ownership transfer should reflect changes in token ownership and balances.
             - Conditions on Input: Consider how inputs affect the state variables.
             - Reset Conditions: Ensure certain variables are reset after the function execution, if applicable.
-                
+                      
             ERC interface example:
             ```solidity
                 pragma solidity >=0.5.0;
                 
-                contract IERC721 {
-                    /// @notice postcondition _ownedTokensCount[owner] == balance
-                    function balanceOf(address owner) public view returns (uint256 balance);
-                    /// @notice postcondition _tokenOwner[tokenId] == _owner
-                    /// @notice postcondition  _owner !=  address(0)
-                    function ownerOf(uint256 tokenId) public view returns (address owner);
+                contract ERC20 {
 
-                    /// @notice postcondition _tokenApprovals[tokenId] == to 
-                    /// @notice emits Approval
-                    function approve(address to, uint256 tokenId) public;
-                    /// @notice postcondition _tokenOwner[tokenId] != address(0)
-                    /// @notice postcondition _tokenApprovals[tokenId] == approved
-                    function getApproved(uint256 tokenId) public view returns (address operator);
+                    mapping (address => uint) _balances;
+                    mapping (address => mapping (address => uint)) _allowed;
+                    uint public _totalSupply;
 
-                    /// @notice postcondition _operatorApprovals[msg.sender][to] == approved
-                    /// @notice emits ApprovalForAll
-                    function setApprovalForAll(address operator, bool _approved) public;
-                    /// @notice postcondition _operatorApprovals[owner][operator] == approved
-                    function isApprovedForAll(address owner, address operator) public view returns (bool);
+                    event Transfer(address indexed _from, address indexed _to, uint _value);
+                    event Approval(address indexed _owner, address indexed _spender, uint _value);
 
-                    /// @notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-                    /// @notice  postcondition  _tokenOwner[tokenId] == to
-                    /// @notice  emits Transfer
-                    function transferFrom(address from, address to, uint256 tokenId) public;
-                    /// @notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-                    /// @notice  postcondition  _tokenOwner[tokenId] == to
-                    /// @notice  emits  Transfer
-                    function safeTransferFrom(address from, address to, uint256 tokenId) public;
+                    /// @notice postcondition supply == _totalSupply
+                    function totalSupply() public view returns (uint256 supply);
 
-                    /// @notice  postcondition ( ( _ownedTokensCount[from] ==  __verifier_old_uint (_ownedTokensCount[from] ) - 1  &&  from  != to ) || ( from == to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[to] ==  __verifier_old_uint ( _ownedTokensCount[to] ) + 1  &&  from  != to ) || ( from  == to ) )
-                    /// @notice  postcondition  _tokenOwner[tokenId] == to
-                    /// @notice  emits  Transfer
-                    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public;
+                    /// @notice  postcondition ( ( _balances[msg.sender] ==  __verifier_old_uint (_balances[msg.sender] ) - _value  && msg.sender  != _to ) ||   ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender]) && msg.sender  == _to ) &&  success )   || !success
+                    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  && msg.sender  != _to ) ||   ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) && msg.sender  == _to )  )   || !success
+                    function transfer(address _to, uint256 _value) public returns (bool success);
+
+                    /// @notice  postcondition ( ( _balances[_from] ==  __verifier_old_uint (_balances[_from] ) - _value  &&  _from  != _to ) || ( _balances[_from] ==  __verifier_old_uint ( _balances[_from] ) &&  _from == _to ) && success ) || !success 
+                    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  &&  _from  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) &&  _from  == _to ) && success ) || !success 
+                    /// @notice  postcondition ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender] ) - _value && success) || ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender]) && !success) ||  _from  == msg.sender
+                    /// @notice  postcondition  _allowed[_from ][msg.sender]  <= __verifier_old_uint (_allowed[_from ][msg.sender] ) ||  _from  == msg.sender
+                    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
+
+                    /// @notice  postcondition (_allowed[msg.sender ][ _spender] ==  _value  &&  success) || ( _allowed[msg.sender ][ _spender] ==  __verifier_old_uint ( _allowed[msg.sender ][ _spender] ) && !success )    
+                    function approve(address _spender, uint256 _value) public returns (bool success);
+
+                    /// @notice postcondition _balances[_owner] == balance
+                    function balanceOf(address _owner) public view returns (uint256 balance);
+
+                    /// @notice postcondition _allowed[_owner][_spender] == remaining
+                    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
                 }
             ```
-
+            
             Can you please generate a specification given the following ERC interface (delimited by token ```solidity ```) and EIP markdown (delimited by token <eip>)?
-
-            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE ERC721 EXAMPLE ABOVE:
+                      
+            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE ERC20 EXAMPLE ABOVE:
 
             ```solidity
                 pragma solidity >=0.5.0;
@@ -298,7 +296,7 @@ def run_verification_process():
                     function totalSupply() public view returns (uint256 supply);
                     
                     /**
-                    * Transfers `_value` + 5 amount of tokens to address `_to`, and MUST fire the `Transfer` event.
+                    * Transfers `_value` amount of tokens to address `_to`, and MUST fire the `Transfer` event.
                     * The function SHOULD `throw` if the message caller's account balance does not have enough tokens to spend.
 
                     * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
@@ -335,8 +333,8 @@ def run_verification_process():
                     function allowance(address owner, address spender) public view returns (uint remaining);
                 }
             ```
-
-            EIP markdown below:
+            
+            EIP ERC20 markdown below:
 
             <eip>
                 ## Simple Summary
@@ -413,7 +411,7 @@ def run_verification_process():
 
                 #### transfer
 
-                Transfers `_value` + 5 amount of tokens to address `_to`, and MUST fire the `Transfer` event.
+                Transfers `_value` amount of tokens to address `_to`, and MUST fire the `Transfer` event.
                 The function SHOULD `throw` if the message caller's account balance does not have enough tokens to spend.
 
                 *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
@@ -499,4 +497,4 @@ def run_verification_process():
     return results
 
 verification_results = run_verification_process()
-Utils.save_results_to_csv("res_4_erc20-721_context.csv", verification_results)
+Utils.save_results_to_csv("erc20_[20].csv", verification_results)
