@@ -283,7 +283,7 @@ def run_verification_process():
             ```solidity
                 pragma solidity >= 0.5.0;
 
-                contract IERC1155  {
+                contract ERC1155  {
 
                     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
                     event TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values);
@@ -1084,4 +1084,4 @@ def run_verification_process():
     return results
 
 verification_results = run_verification_process()
-Utils.save_results_to_csv("erc1155_[1155].csv", verification_results)
+Utils.save_results_to_csv("erc1155_[20].csv", verification_results)
