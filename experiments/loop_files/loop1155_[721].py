@@ -9,7 +9,7 @@ from typing import List
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-openai.api_key = "sk-proj-klVFxlWU41a2lERXRag4T3BlbkFJ58oP09nvtT4sJHQhO0VB"
+openai.api_key = "your_open_ai_key"
 # 3.5
 #assistant_id = "asst_l6McDS1eeFqRSRucPUerwD3x"
 # 4o

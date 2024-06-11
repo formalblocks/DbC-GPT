@@ -9,7 +9,7 @@ from typing import List
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-openai.api_key = "sk-proj-klVFxlWU41a2lERXRag4T3BlbkFJ58oP09nvtT4sJHQhO0VB"
+openai.api_key = "your_open_ai_key"
 # 3.5
 #assistant_id = "asst_l6McDS1eeFqRSRucPUerwD3x"
 # 4o
@@ -243,42 +243,48 @@ def run_verification_process():
             ```solidity
                 pragma solidity >=0.5.0;
                 
-                contract ERC20 {
-
-                    mapping (address => uint) _balances;
-                    mapping (address => mapping (address => uint)) _allowed;
-                    uint public _totalSupply;
-
-                    event Transfer(address indexed _from, address indexed _to, uint _value);
-                    event Approval(address indexed _owner, address indexed _spender, uint _value);
-
-                    /// @notice postcondition supply == _totalSupply
-                    function totalSupply() public view returns (uint256 supply);
-
-                    /// @notice  postcondition ( ( _balances[msg.sender] ==  __verifier_old_uint (_balances[msg.sender] ) - _value  && msg.sender  != _to ) ||   ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender]) && msg.sender  == _to ) &&  success )   || !success
-                    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  && msg.sender  != _to ) ||   ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) && msg.sender  == _to )  )   || !success
-                    function transfer(address _to, uint256 _value) public returns (bool success);
-
-                    /// @notice  postcondition ( ( _balances[_from] ==  __verifier_old_uint (_balances[_from] ) - _value  &&  _from  != _to ) || ( _balances[_from] ==  __verifier_old_uint ( _balances[_from] ) &&  _from == _to ) && success ) || !success 
-                    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  &&  _from  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) &&  _from  == _to ) && success ) || !success 
-                    /// @notice  postcondition ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender] ) - _value && success) || ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender]) && !success) ||  _from  == msg.sender
-                    /// @notice  postcondition  _allowed[_from ][msg.sender]  <= __verifier_old_uint (_allowed[_from ][msg.sender] ) ||  _from  == msg.sender
-                    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
-
-                    /// @notice  postcondition (_allowed[msg.sender ][ _spender] ==  _value  &&  success) || ( _allowed[msg.sender ][ _spender] ==  __verifier_old_uint ( _allowed[msg.sender ][ _spender] ) && !success )    
-                    function approve(address _spender, uint256 _value) public returns (bool success);
-
-                    /// @notice postcondition _balances[_owner] == balance
+                contract ERC721 {
+                    
+                    /// @notice postcondition _ownedTokensCount[_owner] == balance
                     function balanceOf(address _owner) public view returns (uint256 balance);
+                    
+                    /// @notice postcondition _tokenOwner[_tokenId] == _owner
+                    /// @notice postcondition  _owner !=  address(0)
+                    function ownerOf(uint256 _tokenId) public view returns (address owner);
 
-                    /// @notice postcondition _allowed[_owner][_spender] == remaining
-                    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
+                    /// @notice postcondition _tokenApprovals[_tokenId] == _approved 
+                    function approve(address _approved, uint256 _tokenId) external;
+                    
+                    /// @notice postcondition _tokenOwner[tokenId] != address(0)
+                    /// @notice postcondition _tokenApprovals[tokenId] == approved
+                    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+                    /// @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+                    function setApprovalForAll(address _operator, bool _approved) external;
+                    
+                    /// @notice postcondition _operatorApprovals[_owner][_operator] == approved
+                    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
+                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _owned_kensCount[to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
+                    /// @notice  postcondition  _tokenOwner[_tokenId] == _to
+                    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+                    
+                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
+                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _ownedTokensCount[_to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
+                    /// @notice  postcondition  _tokenOwner[_tokenId] == to
+                    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
+                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _ownedTokensCount[_to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
+                    /// @notice  postcondition  _tokenOwner[_tokenId] == _to
+                    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
                 }
             ```
             
             Can you please generate a specification given the following ERC interface (delimited by token ```solidity ```) and EIP markdown (delimited by token <eip>)?
                       
-            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE ERC20 EXAMPLE ABOVE:
+            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE ERC721 EXAMPLE ABOVE:
 
             ```solidity
                 pragma solidity >=0.5.0;
@@ -497,4 +503,4 @@ def run_verification_process():
     return results
 
 verification_results = run_verification_process()
-Utils.save_results_to_csv("erc20_[20].csv", verification_results)
+Utils.save_results_to_csv("erc20_[721].csv", verification_results)

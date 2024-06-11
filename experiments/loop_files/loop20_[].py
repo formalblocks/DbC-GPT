@@ -9,7 +9,7 @@ from typing import List
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-openai.api_key = "sk-proj-klVFxlWU41a2lERXRag4T3BlbkFJ58oP09nvtT4sJHQhO0VB"
+openai.api_key = "your_open_ai_key"
 # 3.5
 #assistant_id = "asst_l6McDS1eeFqRSRucPUerwD3x"
 # 4o
@@ -222,7 +222,7 @@ def run_verification_process():
         assistant = Assistant(assistant_id)
         thread = Thread(assistant)
         result = loop(thread, """
-            Given an examaple of ERC interface, the ERC interface to be annotated and an EIP markdown, generate a specification for the ERC interface with solc-verify postconditions annotations, just postconditions, no other annotations types, this is very important!
+            Given an ERC interface to be annotated and an EIP markdown, generate a specification for the ERC interface with solc-verify postconditions annotations, just postconditions, no other annotations types, this is very important!
 
             Instructions:
 
@@ -239,52 +239,7 @@ def run_verification_process():
             - Conditions on Input: Consider how inputs affect the state variables.
             - Reset Conditions: Ensure certain variables are reset after the function execution, if applicable.
                       
-            ERC interface example:
-            ```solidity
-                pragma solidity >=0.5.0;
-                
-                contract ERC721 {
-                    
-                    /// @notice postcondition _ownedTokensCount[_owner] == balance
-                    function balanceOf(address _owner) public view returns (uint256 balance);
-                    
-                    /// @notice postcondition _tokenOwner[_tokenId] == _owner
-                    /// @notice postcondition  _owner !=  address(0)
-                    function ownerOf(uint256 _tokenId) public view returns (address owner);
-
-                    /// @notice postcondition _tokenApprovals[_tokenId] == _approved 
-                    function approve(address _approved, uint256 _tokenId) external;
-                    
-                    /// @notice postcondition _tokenOwner[tokenId] != address(0)
-                    /// @notice postcondition _tokenApprovals[tokenId] == approved
-                    function getApproved(uint256 _tokenId) external view returns (address approved);
-
-                    /// @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
-                    function setApprovalForAll(address _operator, bool _approved) external;
-                    
-                    /// @notice postcondition _operatorApprovals[_owner][_operator] == approved
-                    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
-
-                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _owned_kensCount[to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
-                    /// @notice  postcondition  _tokenOwner[_tokenId] == _to
-                    function transferFrom(address _from, address _to, uint256 _tokenId) external;
-                    
-                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _ownedTokensCount[_to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
-                    /// @notice  postcondition  _tokenOwner[_tokenId] == to
-                    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
-
-                    /// @notice  postcondition ( ( _ownedTokensCount[_from] ==  __verifier_old_uint (_ownedTokensCount[_from] ) - 1  &&  _from  != _to ) || ( _from == _to )  ) 
-                    /// @notice  postcondition ( ( _ownedTokensCount[_to] ==  __verifier_old_uint ( _ownedTokensCount[_to] ) + 1  &&  _from  != _to ) || ( _from  == _to ) )
-                    /// @notice  postcondition  _tokenOwner[_tokenId] == _to
-                    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
-                }
-            ```
-            
             Can you please generate a specification given the following ERC interface (delimited by token ```solidity ```) and EIP markdown (delimited by token <eip>)?
-                      
-            HERE FOLLOWS THE CONTRACT TO ADD SOLC-VERIFY ANNOTATIONS, LIKE THE ERC721 EXAMPLE ABOVE:
 
             ```solidity
                 pragma solidity >=0.5.0;
@@ -308,7 +263,7 @@ def run_verification_process():
                     * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
                     */
                     $ADD POSTCONDITION HERE
-                    function transfer(address _to, uint _value) public returns (bool success);
+                    function transfer(address to, uint value) public returns (bool success);
 
                     /**
                     * Transfers `_value` amount of tokens from address `_from` to address `_to`, and MUST fire the `Transfer` event.
@@ -318,25 +273,25 @@ def run_verification_process():
                     * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
                     */
                     $ADD POSTCONDITION HERE
-                    function transferFrom(address _from, address _to, uint _value) public returns (bool success);
+                    function transferFrom(address from, address to, uint value) public returns (bool success);
 
                     /**
                     * Allows `_spender` to withdraw from your account multiple times, up to the `_value` amount. If this function is called again it overwrites the current allowance with `_value`.
                     */
                     $ADD POSTCONDITION HERE
-                    function approve(address _spender, uint _value) public returns (bool success);
+                    function approve(address spender, uint value) public returns (bool success);
 
                     /**
                     * Returns the account balance of another account with address `_owner`.
                     */
                     $ADD POSTCONDITION HERE
-                    function balanceOf(address _owner) public view returns (uint balance);
+                    function balanceOf(address owner) public view returns (uint balance);
 
                     /**
                     * Returns the amount which `_spender` is still allowed to withdraw from `_owner`.
                     */
                     $ADD POSTCONDITION HERE
-                    function allowance(address _owner, address _spender) public view returns (uint remaining);
+                    function allowance(address owner, address spender) public view returns (uint remaining);
                 }
             ```
             
@@ -503,4 +458,4 @@ def run_verification_process():
     return results
 
 verification_results = run_verification_process()
-Utils.save_results_to_csv("erc20_[721].csv", verification_results)
+Utils.save_results_to_csv("erc20_[].csv", verification_results)

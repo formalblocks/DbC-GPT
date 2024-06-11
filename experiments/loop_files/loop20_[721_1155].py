@@ -9,7 +9,7 @@ from typing import List
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-openai.api_key = "sk-proj-klVFxlWU41a2lERXRag4T3BlbkFJ58oP09nvtT4sJHQhO0VB"
+openai.api_key = "your_open_ai_key"
 # 3.5
 #assistant_id = "asst_l6McDS1eeFqRSRucPUerwD3x"
 # 4o
@@ -213,7 +213,7 @@ def loop(thread: Thread, message: str) -> bool:
 
 def run_verification_process():
     results = []
-    for i in range(10):
+    for i in range(5):
         global interaction_counter
         global verification_status
         
@@ -238,7 +238,7 @@ def run_verification_process():
             - State Changes: Reflect how state variables change. For example, ownership transfer should reflect changes in token ownership and balances.
             - Conditions on Input: Consider how inputs affect the state variables.
             - Reset Conditions: Ensure certain variables are reset after the function execution, if applicable.
-
+                      
             ERC interface example:
             ```solidity
                 pragma solidity >=0.5.0;
@@ -281,10 +281,10 @@ def run_verification_process():
                     function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
                 }
             ```
-            
-            ERC interface example:
+
+            ERC interface example:   
             ```solidity
-                contract ERC1155  {
+                contract IERC1155  {
                     /// @notice postcondition _balances[_id][_owner] == balance  
                     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance);
                     
@@ -309,43 +309,6 @@ def run_verification_process():
                     /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
                     /// @notice postcondition _to != address(0)
                     function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data) public;
-                }
-            ```
-                    
-            ERC interface example:
-            ```solidity
-                pragma solidity >=0.5.0;
-                
-                contract ERC20 {
-
-                    mapping (address => uint) _balances;
-                    mapping (address => mapping (address => uint)) _allowed;
-                    uint public _totalSupply;
-
-                    event Transfer(address indexed _from, address indexed _to, uint _value);
-                    event Approval(address indexed _owner, address indexed _spender, uint _value);
-
-                    /// @notice postcondition supply == _totalSupply
-                    function totalSupply() public view returns (uint256 supply);
-
-                    /// @notice  postcondition ( ( _balances[msg.sender] ==  __verifier_old_uint (_balances[msg.sender] ) - _value  && msg.sender  != _to ) ||   ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender]) && msg.sender  == _to ) &&  success )   || !success
-                    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  && msg.sender  != _to ) ||   ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) && msg.sender  == _to )  )   || !success
-                    function transfer(address _to, uint256 _value) public returns (bool success);
-
-                    /// @notice  postcondition ( ( _balances[_from] ==  __verifier_old_uint (_balances[_from] ) - _value  &&  _from  != _to ) || ( _balances[_from] ==  __verifier_old_uint ( _balances[_from] ) &&  _from == _to ) && success ) || !success 
-                    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  &&  _from  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) &&  _from  == _to ) && success ) || !success 
-                    /// @notice  postcondition ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender] ) - _value && success) || ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender]) && !success) ||  _from  == msg.sender
-                    /// @notice  postcondition  _allowed[_from ][msg.sender]  <= __verifier_old_uint (_allowed[_from ][msg.sender] ) ||  _from  == msg.sender
-                    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
-
-                    /// @notice  postcondition (_allowed[msg.sender ][ _spender] ==  _value  &&  success) || ( _allowed[msg.sender ][ _spender] ==  __verifier_old_uint ( _allowed[msg.sender ][ _spender] ) && !success )    
-                    function approve(address _spender, uint256 _value) public returns (bool success);
-
-                    /// @notice postcondition _balances[_owner] == balance
-                    function balanceOf(address _owner) public view returns (uint256 balance);
-
-                    /// @notice postcondition _allowed[_owner][_spender] == remaining
-                    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
                 }
             ```
             
@@ -375,7 +338,7 @@ def run_verification_process():
                     * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
                     */
                     $ADD POSTCONDITION HERE
-                    function transfer(address _to, uint256 _value) public returns (bool success);
+                    function transfer(address _to, uint _value) public returns (bool success);
 
                     /**
                     * Transfers `_value` amount of tokens from address `_from` to address `_to`, and MUST fire the `Transfer` event.
@@ -385,25 +348,25 @@ def run_verification_process():
                     * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
                     */
                     $ADD POSTCONDITION HERE
-                    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
+                    function transferFrom(address _from, address _to, uint _value) public returns (bool success);
 
                     /**
                     * Allows `_spender` to withdraw from your account multiple times, up to the `_value` amount. If this function is called again it overwrites the current allowance with `_value`.
                     */
                     $ADD POSTCONDITION HERE
-                    function approve(address _spender, uint256 _value) public returns (bool success);
+                    function approve(address _spender, uint _value) public returns (bool success);
 
                     /**
                     * Returns the account balance of another account with address `_owner`.
                     */
                     $ADD POSTCONDITION HERE
-                    function balanceOf(address _owner) public view returns (uint256 balance);
+                    function balanceOf(address _owner) public view returns (uint balance);
 
                     /**
                     * Returns the amount which `_spender` is still allowed to withdraw from `_owner`.
                     */
                     $ADD POSTCONDITION HERE
-                    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
+                    function allowance(address _owner, address _spender) public view returns (uint remaining);
                 }
             ```
             
@@ -570,4 +533,4 @@ def run_verification_process():
     return results
 
 verification_results = run_verification_process()
-Utils.save_results_to_csv("erc20_[20_721_1155].csv", verification_results)
+Utils.save_results_to_csv("erc20_[721_1155].csv", verification_results)
