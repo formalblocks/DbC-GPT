@@ -1,24 +1,8 @@
-// Added by Pedro: Extracted from: https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/19c74140523e9af5a8489fe484456ca2adc87484/contracts/token/ERC20/ERC20.sol
-// To work with Solidity 0.7, change pragma and add "override" to methods.
-
 pragma solidity >=0.5.7;
 
 import "./IERC20.sol";
-// Edited by Pedro to fix path for our repository
 import "./math/SafeMath.sol";
 
-/**
- * @title Standard ERC20 token
- *
- * @dev Implementation of the basic standard token.
- * https://eips.ethereum.org/EIPS/eip-20
- * Originally based on code by FirstBlood:
- * https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
- *
- * This implementation emits additional Approval events, allowing applications to reconstruct the allowance status for
- * all accounts just by listening to said events. Note that this isn't required by the specification, and other
- * compliant implementations may not do it.
- */
 contract ERC20 is IERC20 {
     using SafeMath for uint256;
 
@@ -28,83 +12,86 @@ contract ERC20 is IERC20 {
 
     uint256 private _totalSupply;
 
-    /**
-     * @dev Total number of tokens in existence.
-     */
-    ///@notice postcondition supply == _totalSupply
+    struct StateOld {
+        uint256  _totalSupply;
+        mapping (address => uint256) _balances;
+        mapping (address => mapping (address => uint256)) _allowed;
+    }
+
+    struct StateNew {
+        uint256  _totalSupply;
+        mapping (address => uint256) _balances;
+        mapping (address => mapping (address => uint256)) _allowed;
+    }
+    
+    StateOld od;
+    StateOld od_old;
+    StateNew nw;
+    StateNew nw_old;
+
+    /// @notice precondition __verifier_sum_uint(od._balances) == od._totalSupply // Abs func 
+    /// @notice precondition __verifier_sum_uint(nw._balances) == nw._totalSupply // Abs func 
+    /// @notice precondition __verifier_sum_uint(od._balances) == __verifier_sum_uint(nw._balances) // Abs func 
+    /// @notice postcondition supply == _totalSupply
 
     function totalSupply()  public view returns (uint256 supply) {
         return _totalSupply;
     }
 
-    /**
-     * @dev Gets the balance of the specified address.
-     * @param _owner The address to query the balance of.
-     * @return A uint256 representing the amount owned by the passed address.
-     */
-    ///@notice postcondition balance == _balances[_owner]
-
+    /// @notice precondition forall (address addr) od._balances[addr] == nw._balances[addr] // Abs func 
+    /// @notice precondition od._balances[_owner] == balance
+    /// @notice postcondition balance == _balances[_owner]
+    
     function balanceOf(address _owner)  public view returns (uint256 balance) {
         return _balances[_owner];
     }
 
-    /**
-     * @dev Function to check the amount of tokens that an _owner allowed to a _spender.
-     * @param _owner address The address which owns the funds.
-     * @param _spender address The address which will spend the funds.
-     * @return A uint256 specifying the amount of tokens still available for the _spender.
-     */
-    ///@notice postcondition remaining == _allowed[_owner][_spender]
-
+    /// @notice precondition forall (address addr1, address addr2) od._allowed[addr1][addr2] == nw._allowed[addr1][addr2] // Abs func 
+    /// @notice precondition od._allowed[_owner][_spender] == remaining
+    /// @notice postcondition remaining == _allowed[_owner][_spender]
+    
     function allowance(address _owner, address _spender)  public view returns (uint256 remaining) {
         return _allowed[_owner][_spender];
     }
 
-    /**
-     * @dev Transfer token _to a specified address.
-     * @param _to The address _to transfer _to.
-     * @param _value The amount _to be transferred.
-     */
-    ///@notice postcondition _balances[msg.sender] == __verifier_old_uint(_balances[msg.sender]) - _value
-/// @notice postcondition _balances[_to] == __verifier_old_uint(_balances[_to]) + _value
-/// @notice postcondition _balances[msg.sender] >= _value
-/// @notice postcondition _to != address(0)
+    /// @notice precondition forall (address addr) od._balances[addr] == nw._balances[addr] // Abs func 
+    /// @notice precondition forall (address addr) od_old._balances[addr] == nw_old._balances[addr] // Abs func 
+    /// @notice precondition (( od._balances[msg.sender] == od_old._balances[msg.sender] - _value  && msg.sender != _to) || (od._balances[msg.sender] == od_old._balances[msg.sender] && msg.sender == _to ) && success ) || !success
+    /// @notice precondition (( od._balances[_to] == od_old._balances[_to] + _value && msg.sender != _to ) || ( od._balances[_to] == od_old._balances[_to] && msg.sender == _to ) && success ) || !success
+    /// @notice postcondition _balances[msg.sender] == __verifier_old_uint(_balances[msg.sender]) - _value || _balances[msg.sender] == __verifier_old_uint(_balances[msg.sender])
+    /// @notice postcondition _balances[_to] == __verifier_old_uint(_balances[_to]) + _value || _balances[_to] == __verifier_old_uint(_balances[_to])
+    /// @notice postcondition _value == 0 || _to != address(0)
+    /// @notice postcondition success
 
     function transfer(address _to, uint256 _value)  public returns (bool success) {
         _transfer(msg.sender, _to, _value);
         return true;
     }
 
-    /**
-     * @dev Approve the passed address to spend the specified amount of tokens on behalf of msg.sender.
-     * Beware that changing an allowance with this method brings the risk that someone may use both the old
-     * and the new allowance by unfortunate transaction ordering. One possible solution to mitigate this
-     * race condition is to first reduce the spender's allowance to 0 and set the desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     * @param spender The address which will spend the funds.
-     * @param _value The amount of tokens to be spent.
-     */
-    ///@notice postcondition _allowed[msg.sender][_spender] == _value
-/// @notice postcondition _spender != address(0)
-
+    /// @notice precondition forall (address addr1, address addr2) od._allowed[addr1][addr2] == nw._allowed[addr1][addr2] // Abs func 
+    /// @notice precondition forall (address addr1, address addr2) od_old._allowed[addr1][addr2] == nw_old._allowed[addr1][addr2] // Abs func 
+    /// @notice precondition (od._allowed[msg.sender][_spender] == _value && success) || (od._allowed[msg.sender][_spender] == od_old._allowed[msg.sender][_spender] && !success)
+    /// @notice postcondition _allowed[msg.sender][_spender] == _value
+    
     function approve(address _spender, uint256 _value)  public returns (bool success) {
         _approve(msg.sender, _spender, _value);
         return true;
     }
 
-    /**
-     * @dev Transfer tokens _from one address to another.
-     * Note that while this function emits an Approval event, this is not required as per the specification,
-     * and other compliant implementations may not emit the event.
-     * @param _from address The address which you want to send tokens _from
-     * @param to address The address which you want to transfer to
-     * @param value uint256 the amount of tokens to be transferred
-     */
-    ///@notice postcondition _balances[_from] == __verifier_old_uint(_balances[_from]) - _value
-/// @notice postcondition _balances[_to] == __verifier_old_uint(_balances[_to]) + _value
-/// @notice postcondition _allowed[_from][msg.sender] == __verifier_old_uint(_allowed[_from][msg.sender]) - _value
-/// @notice postcondition _from != address(0) && _to != address(0)
+    /// @notice precondition forall (address addr) od._balances[addr] == nw._balances[addr] // Abs func 
+    /// @notice precondition forall (address addr) od_old._balances[addr] == nw_old._balances[addr] // Abs func 
+    /// @notice precondition forall (address addr1, address addr2) od._allowed[addr1][addr2] == nw._allowed[addr1][addr2] // Abs func 
+    /// @notice precondition forall (address addr1, address addr2) od_old._allowed[addr1][addr2] == nw_old._allowed[addr1][addr2] // Abs func 
+    /// @notice precondition (( od._balances[msg.sender] == od_old._balances[msg.sender] - _value  && msg.sender != _to) || (od._balances[msg.sender] == od_old._balances[msg.sender] && msg.sender == _to ) && success ) || !success
+    /// @notice precondition (( od._balances[_to] == od_old._balances[_to] + _value && msg.sender != _to ) || ( od._balances[_to] == od_old._balances[_to] && msg.sender == _to ) && success ) || !success
+    /// @notice precondition (od._allowed[_from][msg.sender] == od_old._allowed[_from][msg.sender] - _value && success) || (od._allowed[_from ][msg.sender] == od_old._allowed[_from][msg.sender] && !success) || _from == msg.sender
+    /// @notice precondition  od._allowed[_from][msg.sender] <= od_old._allowed[_from][msg.sender] || _from  == msg.sender
 
+    /// @notice postcondition _balances[_from] == __verifier_old_uint(_balances[_from]) - _value || _balances[_from] == __verifier_old_uint(_balances[_from])
+    /// @notice postcondition _balances[_to] == __verifier_old_uint(_balances[_to]) + _value || _balances[_to] == __verifier_old_uint(_balances[_to])
+    /// @notice postcondition _allowed[_from][msg.sender] == __verifier_old_uint(_allowed[_from][msg.sender]) - _value || _allowed[_from][msg.sender] == __verifier_old_uint(_allowed[_from][msg.sender])
+    /// @notice postcondition _value == 0 || _to != address(0)
+    
     function transferFrom(address _from, address _to, uint256 _value)  public returns (bool success) {
         _transfer(_from, _to, _value);
         _approve(_from, msg.sender, _allowed[_from][msg.sender].sub(_value));

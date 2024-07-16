@@ -102,8 +102,8 @@ class SolcVerifyWrapper:
 
     SOLC_VERIFY_CMD = "solc-verify.py"
     SPEC_FILE_PATH = './temp/spec.sol'
-    ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/imp_spec_merge.template'
-    #ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement.template'
+    #ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/imp_spec_merge.template'
+    ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement.template'
     ERC20_MERGE_PATH = './solc_verify_generator/ERC20/imp/ERC20_merge.sol'
 
     @classmethod
@@ -124,7 +124,7 @@ class SolcVerifyWrapper:
         Utils.save_string_to_file(cls.SPEC_FILE_PATH, soldity_spec_str)
         from solc_verify_generator.main import generate_merge
         try:
-            generate_merge(cls.SPEC_FILE_PATH, cls.ERC20_TEMPLATE_PATH, cls.ERC20_MERGE_PATH)
+            generate_merge(cls.SPEC_FILE_PATH, cls.ERC20_TEMPLATE_PATH, cls.ERC20_MERGE_PATH, prefix='nw')
         except RuntimeError as e:
             return VerificationResult(*e.args)
         return cls.call_solc(cls.ERC20_MERGE_PATH)
