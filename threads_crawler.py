@@ -69,7 +69,11 @@ threads_ids_721_20_1155 = ['thread_fCbfNXjS7jmsyOkGvFHF6vz2', 'thread_K31nh3BqGH
 
 threads_ids_721_1155 = ['thread_yw2bBWuuRKYQcQHhaPJUyXw7', 'thread_MIu6Cy3eBrtxfnCtWm4RH7jS', 'thread_fELOj7CnWIN1u0vR9etfiuM3', 'thread_NHhytidAetdeNIv35cUT1whz', 'thread_l4wMEQhYMPYAeHcrooz6dk2v', 'thread_8qmKMzk0wsuvtEUYdgkh11x6', 'thread_AgCdoUV0PkNdmwhim2SOs72P', 'thread_nH8Q4FHMlTWXmxcIXcJDohoA', 'thread_OYt0K6gyh26gLjpLg7Ykw11d', 'thread_pChp5OuRqkewav6YmjVXxcr3']
 
-threads_ids_721 = ['thread_zV4aAsOaiipaZQIPsVPYSMkX', 'thread_XvA5R0Uw2byLH7ggxL0YVVdp', 'thread_t8McWHQXM5BZX4Igxqgi5Q1u', 'thread_UVgy5idmY5DnsCHyVgbiH8Ng', 'thread_4BWxzlVDNpdHEH0GEutuCK8u']
+threads_ids_721 = ['thread_zV4aAsOaiipaZQIPsVPYSMkX', 'thread_XvA5R0Uw2byLH7ggxL0YVVdp', 'thread_t8McWHQXM5BZX4Igxqgi5Q1u', 'thread_UVgy5idmY5DnsCHyVgbiH8Ng', 'thread_4BWxzlVDNpdHEH0GEutuCK8u', 'thread_3vdJru4dIwtMue5IQzywk7kB', 'thread_ak0DaJmaMBuha8ko7HFJcJMF', 'thread_jeP0geUsMh6veALbQlrWyltN', 'thread_l09gIAReTaqg34idoV0OfF5Q', 'thread_zV4aAsOaiipaZQIPsVPYSMkX']
 
-for thread_id in threads_ids_721_1155:
+threads_ids_20_1155 = ['thread_t87sPGDBp0c7BDziOqX1wJs5', 'thread_jZwVvSMT0XMgxmXA9d0dYugb', 'thread_ESekwBtIJEwpmYNywf9kbDOR', 'thread_niwp5sNIZkb6P5Q3fgYCwDOo', 'thread_EtkOYoq9SCVw874A5ImaejQ7', 'thread_9T3XyAnSVpFL89ubYSyFb7YR', 'thread_c7Zxz9rPBy8rIuixiLlWh5dE', 'thread_fqVAMuLVrGurGmHf7tytiBPV', 'thread_tokROLa21rReJy6lh10x09T2', 'thread_U3uGRIFsrestQXp5yeSI8xVc']
+
+threads_ids_20_721_1155 = ['thread_6yMAb6s6hJ4pI2HQ07XvGyjd', 'thread_VRHaGwIQF4Qp9zTnRrj1UGnL', 'thread_wqlypVcSws1oF5cLxP0DPi81', 'thread_awSqOeq22tLLEVa1EBk8Ihjg', 'thread_HCS5BADbSl7doyrnpijfNUQR', 'thread_7suyBwkU3q67WzJcBI7tsOsR', 'thread_7yeMED9pO4zBFpotyfSfLp10', 'thread_AkjYVItu9cg5lKXD8gsPUQox', 'thread_EuYkTaVDHrkY5VweX38hdxjg', 'thread_nL1XeOfPjuHGntexxgBYCWwl']
+
+for thread_id in threads_ids_20_721_1155:
     fetch_and_save_thread(thread_id, f"{thread_id}.txt")
