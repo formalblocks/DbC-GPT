@@ -37,7 +37,7 @@ def add_prefix(annotation: str, state_variables: Dict[str, dict], prefix: str) -
 
 
 def remove_old_ref(annotation: str, prefix: str) -> str:
-    pattern = r'__verifier_old_uint\s*\(\s*(nw.*?)\s*\)'
+    pattern = r'__verifier_old_uint\s*\(\s*(con.*?)\s*\)'
     replacement = lambda match: match.group(1).replace(prefix, f'{prefix}_old')
     return re.sub(pattern, replacement, annotation)
 
