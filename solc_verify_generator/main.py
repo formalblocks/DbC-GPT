@@ -19,13 +19,15 @@ def call_solc(file_path):
     return result
 
 
-def process_annotations(annotations, state_variables, prefix):
+def process_annotations(annotations, state_variables, option, prefix):
     for key, value in annotations.items():
         processed_annotation = value
         if prefix:
             prefixed_value = add_prefix(value, state_variables, prefix)
             old_prefixed_value = remove_old_ref(prefixed_value, prefix)
             processed_annotation = old_prefixed_value
+            if option == "llm_base":
+                processed_annotation = replace_postcondition_by_precondition(processed_annotation)
 
         annotations[key] = add_triple_bars(processed_annotation)
 
@@ -41,6 +43,8 @@ def remove_old_ref(annotation: str, prefix: str) -> str:
     replacement = lambda match: match.group(1).replace(prefix, f'{prefix}_old')
     return re.sub(pattern, replacement, annotation)
 
+def replace_postcondition_by_precondition(annotation: str) -> str:
+    return annotation.replace("postcondition", "precondition")
 
 def add_triple_bars(value: str) -> str:
     lines = value.splitlines()
@@ -50,13 +54,13 @@ def add_triple_bars(value: str) -> str:
     return new_annotation
 
 
-def generate_merge(spec: str, imp_template: str, merge_file_path: str, prefix: str = None):
+def generate_merge(spec: str, imp_template: str, merge_file_path: str, option: str, prefix: str = None):
     result = call_solc(spec)
     if result.returncode:
         # Something has gone wrong compiling the solidity code
         raise RuntimeError(result.returncode, result.stdout + result.stderr)
     annotations, state_variables = parse_ast()
-    process_annotations(annotations, state_variables, prefix)
+    process_annotations(annotations, state_variables, option, prefix)
 
     with open(imp_template, 'r') as impl_template_file:
         template_str = impl_template_file.read()
