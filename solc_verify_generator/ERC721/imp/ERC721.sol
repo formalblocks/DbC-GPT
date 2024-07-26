@@ -64,8 +64,8 @@ contract ERC721 is ERC165 {
     }
 
 
-    /// @notice postcondition _tokenOwner[tokenId] != address(0)
-    /// @notice postcondition _tokenApprovals[tokenId] == approved
+    /// @notice postcondition _tokenOwner[_tokenId] != address(0)
+    /// @notice postcondition _tokenApprovals[_tokenId] == approved
     function getApproved(uint256 tokenId) public view returns (address approved) {
         require(_exists(tokenId));
         return _tokenApprovals[tokenId];

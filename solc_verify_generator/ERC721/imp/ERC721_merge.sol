@@ -1,191 +1,146 @@
-pragma solidity >=0.5.0 <0.9.0;
 
-import "./IERC721Receiver.sol";
-import "./SafeMath.sol";
-import "./Address.sol";
-import "./ERC165.sol";
+contract Refinement {
 
-
-contract ERC721 is ERC165 {
-    using SafeMath for uint256;
-    using Address for address;
-
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
-    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
-
-    // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
-    // which can be also obtained as `IERC721Receiver(0).onERC721Received.selector`
-    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
-
-    // Mapping from token ID to owner
-    mapping (uint256 => address) private _tokenOwner;
-
-    // Mapping from token ID to approved address
-    mapping (uint256 => address) private _tokenApprovals;
-
-    // Mapping from owner to number of owned token
-    mapping (address => uint256) private _ownedTokensCount;
-
-    // Mapping from owner to operator approvals
-    mapping (address => mapping (address => bool)) private _operatorApprovals;
-
-    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
-    
-
-    constructor () public {
-        // register the supported interfaces to conform to ERC721 via ERC165
-        _registerInterface(_INTERFACE_ID_ERC721);
+    struct StateOld {
+        mapping (uint256 => address) _tokenOwner;
+        mapping (uint256 => address) _tokenApprovals;
+        mapping (address => uint256) _ownedTokensCount;
+        mapping (address => mapping (address => bool)) _operatorApprovals;
     }
 
+    struct StateNew {
+        mapping (uint256 => address) _tokenOwner;
+        mapping (uint256 => address) _tokenApprovals;
+        mapping (address => uint256) _ownedTokensCount;
+        mapping (address => mapping (address => bool)) _operatorApprovals;
+    }
+
+    StateOld abs;
+    StateOld abs_old;
+    StateNew con;
+    StateNew con_old;
+
+    /// @notice precondition true
+    /// @notice postcondition true
+    function balanceOf_pre(address _owner, uint256 balance) public view returns (uint256) {}
+
+    /// @notice precondition forall (address _owner) abs._ownedTokensCount[_owner] == con._ownedTokensCount[_owner] // Abs func
+    /// @notice precondition abs._ownedTokensCount[_owner] == balance
     ///@notice postcondition _owner != address(0)
-/// @notice postcondition _ownedTokensCount[_owner] == balance
+///@notice postcondition balance == con._ownedTokensCount[_owner]
 
-    function balanceOf(address _owner) public view returns (uint256 balance) {
-        require(_owner != address(0));
-        return _ownedTokensCount[_owner];
-    }
+    function balanceOf_post(address _owner, uint256 balance) public view returns (uint256) {}
 
-    ///@notice postcondition _tokenOwner[_tokenId] != address(0)
-/// @notice postcondition _tokenOwner[_tokenId] == _owner
+    /// @notice precondition true
+    /// @notice postcondition true
+    function ownerOf_pre(uint256 _tokenId, address _owner) public view returns (address) {}
 
-    function ownerOf(uint256 _tokenId) public view returns (address _owner) {
-        address owner = _tokenOwner[_tokenId];
-        require(owner != address(0));
-        return owner;
-    }
-   
-    ///@notice postcondition _tokenOwner[_tokenId] == msg.sender || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender]
-/// @notice postcondition _tokenApprovals[_tokenId] == _approved
+    /// @notice precondition forall (uint256 _tokenId) abs._tokenOwner[_tokenId] == con._tokenOwner[_tokenId] // Abs func
+    /// @notice precondition abs._tokenOwner[_tokenId] == _owner
+    /// @notice precondition  _owner !=  address(0)
+    ///@notice postcondition _owner != address(0)
+///@notice postcondition _owner == con._tokenOwner[_tokenId]
 
-    function approve(address _approved, uint256 _tokenId) public {
-        address owner = ownerOf(_tokenId);
-        require(_approved != owner);
-        require(msg.sender == owner || isApprovedForAll(owner, msg.sender));
+    function ownerOf_post(uint256 _tokenId, address _owner) public view returns (address) {}
 
-        _tokenApprovals[_tokenId] = _approved;
-        emit Approval(owner, _approved, _tokenId);
-    }
+    /// @notice precondition true
+    /// @notice postcondition true
+    function approve_pre(address _approved, uint256 _tokenId) public {}
 
+    /// @notice precondition forall (uint256 _tokenId) abs._tokenApprovals[_tokenId] == con._tokenApprovals[_tokenId] // Abs func
+    /// @notice precondition abs._tokenApprovals[_tokenId] == _approved 
+    ///@notice postcondition con._tokenApprovals[_tokenId] == _approved
+///@notice postcondition _approved == address(0) || con._tokenApprovals[_tokenId] != address(0)
 
-    ///@notice postcondition _tokenOwner[_tokenId] != address(0)
-/// @notice postcondition _tokenApprovals[_tokenId] == approved
+    function approve_post(address _approved, uint256 _tokenId) public;
 
-    function getApproved(uint256 _tokenId) public view returns (address approved) {
-        require(_exists(_tokenId));
-        return _tokenApprovals[_tokenId];
-    }
+    /// @notice precondition true
+    /// @notice postcondition true
+    function getApproved_pre(uint256 _tokenId, address approved) public view returns (address) {}
 
-    ///@notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+    /// @notice precondition forall (uint256 _tokenId) abs._tokenOwner[_tokenId] == con._tokenOwner[_tokenId] // Abs func
+    /// @notice precondition forall (uint256 _tokenId) abs._tokenApprovals[_tokenId] == con._tokenApprovals[_tokenId] // Abs func
 
-    function setApprovalForAll(address _operator, bool _approved) public {
-        require(_operator != msg.sender);
-        _operatorApprovals[msg.sender][_operator] = _approved;
-        emit ApprovalForAll(msg.sender, _operator, _approved);
-    }
+    /// @notice precondition abs._tokenOwner[_tokenId] != address(0)
+    /// @notice precondition abs._tokenApprovals[_tokenId] == approved
+    ///@notice postcondition approved == con._tokenApprovals[_tokenId]
 
-    ///@notice postcondition _operatorApprovals[_owner][_operator] == approved
+    function getApproved_post(uint256 _tokenId, address approved) public view returns (address) {}
 
-    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
-        return _operatorApprovals[_owner][_operator];
-    }
+    /// @notice precondition true
+    /// @notice postcondition true
+    function setApprovalForAll_pre(address _operator, bool _approved) public {}
 
+    /// @notice precondition forall (address owner, address operator) abs._operatorApprovals[owner][operator] == con._operatorApprovals[owner][operator] // Abs func
+    /// @notice precondition forall (address owner, address operator) abs_old._operatorApprovals[owner][operator] == con_old._operatorApprovals[owner][operator] // Abs func
 
-    ///@notice postcondition _tokenOwner[_tokenId] == _to
-/// @notice postcondition _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 || _from == _to
-/// @notice postcondition _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 || _from == _to
+    /// @notice precondition abs._operatorApprovals[msg.sender][_operator] == _approved
+    ///@notice postcondition con._operatorApprovals[msg.sender][_operator] == _approved
 
-    function transferFrom(address _from, address _to, uint256 _tokenId) public {
-        require(_isApprovedOrOwner(msg.sender, _tokenId));
-       
-        _transferFrom(_from, _to, _tokenId);
-    }
+    function setApprovalForAll_post(address _operator, bool _approved) public {}
 
-    ///@notice postcondition _tokenOwner[_tokenId] == _to
-/// @notice postcondition _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 || _from == _to
-/// @notice postcondition _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 || _from == _to
+    /// @notice precondition true
+    /// @notice postcondition true
+    function isApprovedForAll_pre(address _owner, address _operator, bool approved) public view returns (bool) {}
 
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
-        safeTransferFrom(_from, _to, _tokenId, "");
-    }
+    /// @notice precondition forall (address _owner, address _operator) abs._operatorApprovals[_owner][_operator] == con._operatorApprovals[_owner][_operator] // Abs func
+    /// @notice precondition abs._operatorApprovals[_owner][_operator] == approved
+    ///@notice postcondition approved == con._operatorApprovals[_owner][_operator]
 
-    ///@notice postcondition _tokenOwner[_tokenId] == _to
-/// @notice postcondition _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 || _from == _to
-/// @notice postcondition _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 || _from == _to
-
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
-        transferFrom(_from, _to, _tokenId);
-        require(_checkOnERC721Received(_from, _to, _tokenId, _data));
-    }
-
-   
-    function _exists(uint256 tokenId) internal view returns (bool) {
-        address owner = _tokenOwner[tokenId];
-        return owner != address(0);
-    }
-
-   
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
-        address owner = ownerOf(tokenId);
-        return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
-    }
-
-    function _mint(address to, uint256 tokenId) internal {
-        require(to != address(0));
-        require(!_exists(tokenId));
-
-        _tokenOwner[tokenId] = to;
-        _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
-
-        emit Transfer(address(0), to, tokenId);
-    }
-
-    function _burn(address owner, uint256 tokenId) internal {
-        require(ownerOf(tokenId) == owner);
-
-        _clearApproval(tokenId);
-
-        _ownedTokensCount[owner] = _ownedTokensCount[owner].sub(1);
-        _tokenOwner[tokenId] = address(0);
-
-        emit Transfer(owner, address(0), tokenId);
-    }
-
-    function _burn(uint256 tokenId) internal {
-        _burn(ownerOf(tokenId), tokenId);
-    }
-
-   
-    function _transferFrom(address from, address to, uint256 tokenId) internal {
-        require(ownerOf(tokenId) == from);
-        require(to != address(0));
-
-        _clearApproval(tokenId);
-
-        _ownedTokensCount[from] = _ownedTokensCount[from].sub(1);
-        _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
-
-        _tokenOwner[tokenId] = to;
-
-        emit Transfer(from, to, tokenId);
-    }
-
+    function isApprovedForAll_post(address _owner, address _operator, bool approved) public view returns (bool) {}
     
-    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
-        internal returns (bool)
-    {
-        if (!to.isContract()) {
-            return true;
-        }
+    /// @notice precondition true
+    /// @notice postcondition true
+    function transferFrom_pre(address _from, address _to, uint256 _tokenId) public {}
 
-        bytes4 retval = IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, _data);
-        return (retval == _ERC721_RECEIVED);
-    }
+    /// @notice precondition forall (address _from) abs._ownedTokensCount[_from] == con._ownedTokensCount[_from] // Abs func
+    /// @notice precondition forall (address _from) abs_old._ownedTokensCount[_from] == con_old._ownedTokensCount[_from] // Abs func
+    /// @notice precondition forall (address _to) abs._ownedTokensCount[_to] == con._ownedTokensCount[_to] // Abs func
+    /// @notice precondition forall (address _to) abs_old._ownedTokensCount[_to] == con_old._ownedTokensCount[_to] // Abs func
+    /// @notice precondition forall (uint256 _tokenId) abs._tokenOwner[_tokenId] == con._tokenOwner[_tokenId] // Abs func
 
-    
-    function _clearApproval(uint256 tokenId) private {
-        if (_tokenApprovals[tokenId] != address(0)) {
-            _tokenApprovals[tokenId] = address(0);
-        }
-    }
+    /// @notice  precondition ( ( abs._ownedTokensCount[_from] ==  abs_old._ownedTokensCount[_from] - 1  &&  _from  != _to ) || ( _from == _to )  ) 
+    /// @notice  precondition ( ( abs._ownedTokensCount[_to] ==  abs_old._ownedTokensCount[_to] + 1  &&  _from  != _to ) || ( _from  == _to ) )
+    /// @notice  precondition  abs._tokenOwner[_tokenId] == _to
+    ///@notice postcondition con._tokenOwner[_tokenId] == _to
+///@notice postcondition con._ownedTokensCount[_from] == con._ownedTokensCount[_from] - 1 || con._ownedTokensCount[_from] == con._ownedTokensCount[_from]
+///@notice postcondition con._ownedTokensCount[_to] == con._ownedTokensCount[_to] || con._ownedTokensCount[_to] == con._ownedTokensCount[_to] + 1
+///@notice postcondition con._tokenApprovals[_tokenId] == address(0)
+
+    function transferFrom_post(address _from, address _to, uint256 _tokenId) public {}
+
+
+    /// @notice precondition forall (address _from) abs._ownedTokensCount[_from] == con._ownedTokensCount[_from] // Abs func
+    /// @notice precondition forall (address _from) abs_old._ownedTokensCount[_from] == con_old._ownedTokensCount[_from] // Abs func
+    /// @notice precondition forall (address _to) abs._ownedTokensCount[_to] == con._ownedTokensCount[_to] // Abs func
+    /// @notice precondition forall (address _to) abs_old._ownedTokensCount[_to] == con_old._ownedTokensCount[_to] // Abs func
+    /// @notice precondition forall (uint256 _tokenId) abs._tokenOwner[_tokenId] == con._tokenOwner[_tokenId] // Abs func
+
+    /// @notice precondition ( ( abs._ownedTokensCount[_from] ==  abs_old._ownedTokensCount[_from] - 1  &&  _from  != _to ) || ( _from == _to )  ) 
+    /// @notice precondition ( ( abs._ownedTokensCount[_to] ==  abs_old._ownedTokensCount[_to] + 1  &&  _from  != _to ) || ( _from  == _to ) )
+    /// @notice precondition  abs._tokenOwner[_tokenId] == _to
+    ///@notice postcondition con._tokenOwner[_tokenId] == _to
+///@notice postcondition con._ownedTokensCount[_from] == con._ownedTokensCount[_from] - 1 || con._ownedTokensCount[_from] == con._ownedTokensCount[_from]
+///@notice postcondition con._ownedTokensCount[_to] == con._ownedTokensCount[_to] || con._ownedTokensCount[_to] == con._ownedTokensCount[_to] + 1
+///@notice postcondition con._tokenApprovals[_tokenId] == address(0)
+
+    function safeTransferFrom_post(address _from, address _to, uint256 _tokenId) public {}
+
+    /// @notice precondition true
+    /// @notice postcondition true
+    function safeTransferFrom_pre(address _from, address _to, uint256 _tokenId, bytes memory data) public {}
+
+    /// @notice precondition forall (address _from) abs._ownedTokensCount[_from] ==  con._ownedTokensCount[_from] // Abs func
+    /// @notice precondition forall (address _to) abs_old._ownedTokensCount[_to] ==  con_old._ownedTokensCount[_to] // Abs func
+    /// @notice precondition forall (uint256 _tokenId) abs._tokenOwner[_tokenId] == con._tokenOwner[_tokenId] // Abs func
+
+    /// @notice precondition ( ( abs._ownedTokensCount[_from] ==  abs_old._ownedTokensCount[_from] - 1  &&  _from  != _to ) || ( _from == _to )  ) 
+    /// @notice precondition ( ( abs._ownedTokensCount[_to] ==  abs_old._ownedTokensCount[_to] + 1  &&  _from  != _to ) || ( _from  == _to ) )
+    /// @notice precondition  abs._tokenOwner[_tokenId] == _to
+    ///@notice postcondition con._tokenOwner[_tokenId] == _to
+///@notice postcondition con._ownedTokensCount[_from] == con._ownedTokensCount[_from] - 1 || con._ownedTokensCount[_from] == con._ownedTokensCount[_from]
+///@notice postcondition con._ownedTokensCount[_to] == con._ownedTokensCount[_to] || con._ownedTokensCount[_to] == con._ownedTokensCount[_to] + 1
+///@notice postcondition con._tokenApprovals[_tokenId] == address(0)
+
+    function safeTransferFrom_post(address _from, address _to, uint256 _tokenId, bytes memory data) public {}
 }

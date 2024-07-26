@@ -17,8 +17,8 @@ contract ERC721 {
     /// @notice postcondition _tokenApprovals[_tokenId] == _approved 
     function approve(address _approved, uint256 _tokenId) external;
     
-    /// @notice postcondition _tokenOwner[tokenId] != address(0)
-    /// @notice postcondition _tokenApprovals[tokenId] == approved
+    /// @notice postcondition _tokenOwner[_tokenId] != address(0)
+    /// @notice postcondition _tokenApprovals[_tokenId] == approved
     function getApproved(uint256 _tokenId) external view returns (address approved);
 
     /// @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved

@@ -16,8 +16,8 @@ contract IERC721 {
     /// @notice postcondition _tokenApprovals[tokenId] == to 
     /// @notice emits Approval
     function approve(address to, uint256 tokenId) public;
-    /// @notice postcondition _tokenOwner[tokenId] != address(0)
-    /// @notice postcondition _tokenApprovals[tokenId] == approved
+    /// @notice postcondition _tokenOwner[_tokenId] != address(0)
+    /// @notice postcondition _tokenApprovals[_tokenId] == approved
     function getApproved(uint256 tokenId) public view returns (address operator);
 
     /// @notice postcondition _operatorApprovals[msg.sender][to] == approved
