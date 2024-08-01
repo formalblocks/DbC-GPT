@@ -18,16 +18,24 @@ class SolcVerifyWrapper:
 
     SOLC_VERIFY_CMD = "solc-verify.py"
     SPEC_FILE_PATH = './temp/spec.sol'
+    # ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/imp_spec_merge_[].template'
     ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement_base_llm.template'
     # ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement_llm_base.template'
+    # ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement_base_llm_[].template'
+    # ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement_llm_base_[].template'
+    # ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement_trivial.template'
+    # ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement_trivial_[].template'
     ERC20_MERGE_PATH = './solc_verify_generator/ERC20/imp/ERC20_merge.sol'
 
     # ERC721_TEMPLATE_PATH = './solc_verify_generator/ERC721/templates/spec_refinement_base_llm.template'
-    ERC721_TEMPLATE_PATH = './solc_verify_generator/ERC721/templates/spec_refinement_llm_base.template'
+    # ERC721_TEMPLATE_PATH = './solc_verify_generator/ERC721/templates/spec_refinement_llm_base.template'
+    ERC721_TEMPLATE_PATH = './solc_verify_generator/ERC721/templates/spec_refinement_trivial.template'
     ERC721_MERGE_PATH = './solc_verify_generator/ERC721/imp/ERC721_merge.sol'
 
     # ERC1155_TEMPLATE_PATH = './solc_verify_generator/ERC1155/templates/spec_refinement_base_llm.template'
-    ERC1155_TEMPLATE_PATH = './solc_verify_generator/ERC1155/templates/spec_refinement_llm_base.template'
+    # ERC1155_TEMPLATE_PATH = './solc_verify_generator/ERC1155/templates/spec_refinement_llm_base.template'
+    ERC1155_TEMPLATE_PATH = './solc_verify_generator/ERC1155/templates/spec_refinement_trivial.template'
+
     ERC1155_MERGE_PATH = './solc_verify_generator/ERC1155/imp/ERC1155_merge.sol'
 
     @classmethod
@@ -117,7 +125,9 @@ def run_refinement_verification_process(experiment_name: str, option: str):
     # Save all results to a CSV file
     Utils.save_results_to_csv(f'refinement_check_{experiment_name}_{option}.csv', verification_results)
 
-experiments_list_ERC20 = ['erc20_[20_721_1155]', 'erc20_[20_721]', 'erc20_[20_1155]', 'erc20_[20]', 'erc20_[721_1155]', 'erc20_[721]', 'erc20_[1155]', 'erc_20_[]']
+experiments_list_ERC20 = ['erc20_[]']
+
+# experiments_list_ERC20 = ['erc20_[20_721_1155]', 'erc20_[20_721]', 'erc20_[20_1155]', 'erc20_[20]', 'erc20_[721_1155]', 'erc20_[721]', 'erc20_[1155]', 'erc_20_[]']
 
 experiments_list_ERC721 = ['erc721_[721_20_1155]', 'erc721_[721_20]', 'erc721_[20_1155]', 'erc721_[20]', 'erc721_[721_1155]', 'erc721_[721]', 'erc721_[1155]', 'erc721_[]']
 
@@ -126,4 +136,4 @@ experiments_list_ERC1155 = ['erc1155_[1155_721_20]', 'erc1155_[1155_20]', 'erc11
 # Run the verification process
 for experiment in experiments_list_ERC1155:
     print(f"Running verification process for {experiment}")
-    run_refinement_verification_process(experiment, option='llm_base')
+    run_refinement_verification_process(experiment, option='base_llm')
