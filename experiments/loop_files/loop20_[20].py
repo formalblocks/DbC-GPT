@@ -9,7 +9,7 @@ from typing import List
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-openai.api_key = "your_open_ai_key"
+openai.api_key = ""
 # 3.5
 #assistant_id = "asst_l6McDS1eeFqRSRucPUerwD3x"
 # 4o
@@ -101,7 +101,7 @@ class VerificationResult:
 class SolcVerifyWrapper:
 
     SOLC_VERIFY_CMD = "solc-verify.py"
-    SPEC_FILE_PATH = './temp/spec.sol'
+    SPEC_FILE_PATH = '../../temp/spec.sol'
     ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/imp_spec_merge.template'
     #ERC20_TEMPLATE_PATH = './solc_verify_generator/ERC20/templates/spec_refinement.template'
     ERC20_MERGE_PATH = './solc_verify_generator/ERC20/imp/ERC20_merge.sol'
