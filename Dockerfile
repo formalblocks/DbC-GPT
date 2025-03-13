@@ -1,4 +1,9 @@
-FROM ubuntu:focal
+# x86 
+# FROM ubuntu:focal
+# FROM nvidia/cuda:12.0.0-base-ubuntu20.04
+
+# ARM
+FROM --platform=linux/amd64 ubuntu:focal
 
 # Generic packages
 RUN apt update && DEBIAN_FRONTEND="noninteractive" apt install -y \
@@ -46,25 +51,3 @@ RUN git clone -b 0.5 https://github.com/SRI-CSL/solidity.git \
   && cmake .. -DUSE_Z3=Off -DUSE_CVC4=Off \
   && make \
   && make install
-
-# Get java
-RUN apt update && DEBIAN_FRONTEND="noninteractive" apt install -y \
-  openjdk-11-jre-headless
-
-# Get node
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &&\
-  apt install -y nodejs
-
-RUN npm install --global ganache@7.9.2
-
-# Specific version of python
-RUN apt install -y python3.9
-RUN ln -s /usr/bin/python3.9 /usr/bin/python
-RUN ln -sf /usr/bin/python3.9 /usr/bin/python3 
-
-# pip libraries
-COPY requirements.txt .
-# install requirements but not solc-select (dependency of slither-analyzer)
-RUN pip install -r requirements.txt --no-deps
-
-COPY . .

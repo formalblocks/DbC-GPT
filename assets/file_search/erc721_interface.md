@@ -1,3 +1,4 @@
+```solidity
 pragma solidity >=0.5.0;
 
 contract IERC721 {
@@ -13,7 +14,7 @@ contract IERC721 {
     mapping (address => mapping (address => bool)) private _operatorApprovals;
 
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
-    
+
     /**
         * @notice Count all NFTs assigned to an owner
         * @dev NFTs assigned to the zero address are considered invalid, and this
@@ -23,7 +24,7 @@ contract IERC721 {
         */
     $ADD POSTCONDITION HERE
     function balanceOf(address _owner) external view returns (uint256 balance);
-    
+
     /**
         * @notice Find the owner of an NFT
         * @dev NFTs assigned to zero address are considered invalid, and queries
@@ -33,7 +34,7 @@ contract IERC721 {
         */
     $ADD POSTCONDITION HERE
     function ownerOf(uint256 _tokenId) external view returns (address _owner);
-    
+
     /**
         * @notice Change or reaffirm the approved address for an NFT
         * @dev The zero address indicates there is no approved address.
@@ -44,7 +45,7 @@ contract IERC721 {
         */
     $ADD POSTCONDITION HERE
     function approve(address _approved, uint256 _tokenId) external;
-    
+
     /**
         * @notice Get the approved address for a single NFT
         * @dev Throws if `_tokenId` is not a valid NFT.
@@ -64,7 +65,7 @@ contract IERC721 {
         */
     $ADD POSTCONDITION HERE
     function setApprovalForAll(address _operator, bool _approved) external;
-    
+
     /**
         * @notice Query if an address is an authorized operator for another address
         * @param _owner The address that owns the NFTs
@@ -73,7 +74,7 @@ contract IERC721 {
         */
     $ADD POSTCONDITION HERE
     function isApprovedForAll(address _owner, address _operator) external view returns (bool);
-    
+
     /**
         * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
         *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
@@ -88,7 +89,7 @@ contract IERC721 {
         */
     $ADD POSTCONDITION HERE
     function transferFrom(address _from, address _to, uint256 _tokenId) external;
-    
+
     /**
         * @notice Transfers the ownership of an NFT from one address to another address
         * @dev This works identically to the other function with an extra data parameter,
@@ -99,7 +100,7 @@ contract IERC721 {
         */
     $ADD POSTCONDITION HERE
     function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
-    
+
     /**
         * @notice Transfers the ownership of an NFT from one address to another address
         * @dev Throws unless `msg.sender` is the current owner, an authorized
@@ -117,3 +118,4 @@ contract IERC721 {
     $ADD POSTCONDITION HERE
     function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
 }
+```

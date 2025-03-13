@@ -6,14 +6,23 @@ import re
 import pandas as pd
 from dataclasses import dataclass
 from typing import List
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Get API key from environment variables
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    raise ValueError("OPENAI_API_KEY not found in environment variables")
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-openai.api_key = "your_open_ai_key"
-# 3.5
-#assistant_id = "asst_l6McDS1eeFqRSRucPUerwD3x"
-# 4o
-assistant_id = "asst_8AOYbeZmLBx8Uic6tFUGBjhF"
+# 4o fine tuning
+# assistant_id = "asst_qsyJh2SEYrnuYDiSs5NgdaXx"
+
+#4o
+assistant_id = "asst_WRF0J9P9EiZ70DcntBSlapWB"
 
 # Initialize the global counter
 interaction_counter = 0
@@ -203,6 +212,61 @@ def loop(thread: Thread, message: str) -> bool:
             /// @notice postcondition supply == _totalSupply
             function totalSupply() public view returns (uint256 supply);
         - Output format: return the annotated interface inside code fence (```) to show the code block. RETURN JUST THE CONTRACT ANNOTATED, NOTHING MORE.\n\n
+        Can you please generate a specification given the following ERC interface (delimited by token ```solidity ```)?
+
+        ```solidity
+            pragma solidity >=0.5.0;
+
+            contract ERC20 {
+
+                mapping (address => uint) _balances;
+                mapping (address => mapping (address => uint)) _allowed;
+                uint public _totalSupply;
+
+                /**
+                * Returns the total token supply.
+                */
+                $ADD POSTCONDITION HERE
+                function totalSupply() public view returns (uint256 supply);
+                
+                /**
+                * Transfers `_value` amount of tokens to address `_to`, and MUST fire the `Transfer` event.
+                * The function SHOULD `throw` if the message caller's account balance does not have enough tokens to spend.
+
+                * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
+                */
+                $ADD POSTCONDITION HERE
+                function transfer(address _to, uint256 _value) public returns (bool success);
+
+                /**
+                * Transfers `_value` amount of tokens from address `_from` to address `_to`, and MUST fire the `Transfer` event.
+                * The `transferFrom` method is used for a withdraw workflow, allowing contracts to transfer tokens on your behalf.
+                * This can be used for example to allow a contract to transfer tokens on your behalf and/or to charge fees in sub-currencies.
+                * The function SHOULD `throw` unless the `_from` account has deliberately authorized the sender of the message via some mechanism.
+                * *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
+                */
+                $ADD POSTCONDITION HERE
+                function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
+
+                /**
+                * Allows `_spender` to withdraw from your account multiple times, up to the `_value` amount. If this function is called again it overwrites the current allowance with `_value`.
+                */
+                $ADD POSTCONDITION HERE
+                function approve(address _spender, uint256 _value) public returns (bool success);
+
+                /**
+                * Returns the account balance of another account with address `_owner`.
+                */
+                $ADD POSTCONDITION HERE
+                function balanceOf(address _owner) public view returns (uint256 balance);
+
+                /**
+                * Returns the amount which `_spender` is still allowed to withdraw from `_owner`.
+                */
+                $ADD POSTCONDITION HERE
+                function allowance(address _owner, address _spender) public view returns (uint256 remaining);
+            }
+        ```
         """
         verification_result.output = instructions + verification_result.output
         logging.info("trying again with solc-verify output: " + str(verification_result.output))

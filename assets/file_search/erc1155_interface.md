@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: MIT
-
+```solidity
 pragma solidity >= 0.5.0;
 
-contract IERC1155  {
+contract ERC1155  {
 
     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
     event TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values);
@@ -26,7 +25,7 @@ contract IERC1155  {
     */
     $ADD POSTCONDITION HERE
     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance);
-    
+
     /**
         @notice Get the balance of multiple account/token pairs
         @param _owners The addresses of the token holders
@@ -61,7 +60,7 @@ contract IERC1155  {
         MUST revert if balance of holder for token `_id` is lower than the `_value` sent.
         MUST revert on any other error.
         MUST emit the `TransferSingle` event to reflect the balance change (see "Safe Transfer Rules" section of the standard).
-        After the above conditions are met, this function MUST check if `_to` is a smart contract (e.g. code size > 0). If so, it MUST call `onERC1155Received` on `_to` and act appropriately (see "Safe Transfer Rules" section of the standard).        
+        After the above conditions are met, this function MUST check if `_to` is a smart contract (e.g. code size > 0). If so, it MUST call `onERC1155Received` on `_to` and act appropriately (see "Safe Transfer Rules" section of the standard).
         @param _from    Source address
         @param _to      Target address
         @param _id      ID of the token type
@@ -77,10 +76,10 @@ contract IERC1155  {
         MUST revert if `_to` is the zero address.
         MUST revert if length of `_ids` is not the same as length of `_values`.
         MUST revert if any of the balance(s) of the holder(s) for token(s) in `_ids` is lower than the respective amount(s) in `_values` sent to the recipient.
-        MUST revert on any other error.        
+        MUST revert on any other error.
         MUST emit `TransferSingle` or `TransferBatch` event(s) such that all the balance changes are reflected (see "Safe Transfer Rules" section of the standard).
         Balance changes and events MUST follow the ordering of the arrays (_ids[0]/_values[0] before _ids[1]/_values[1], etc).
-        After the above conditions for the transfer(s) in the batch are met, this function MUST check if `_to` is a smart contract (e.g. code size > 0). If so, it MUST call the relevant `ERC1155TokenReceiver` hook(s) on `_to` and act appropriately (see "Safe Transfer Rules" section of the standard).                      
+        After the above conditions for the transfer(s) in the batch are met, this function MUST check if `_to` is a smart contract (e.g. code size > 0). If so, it MUST call the relevant `ERC1155TokenReceiver` hook(s) on `_to` and act appropriately (see "Safe Transfer Rules" section of the standard).
         @param _from    Source address
         @param _to      Target address
         @param _ids     IDs of each token type (order and length must match _values array)
@@ -90,3 +89,4 @@ contract IERC1155  {
     $ADD POSTCONDITION HERE
     function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data) public;
 }
+```

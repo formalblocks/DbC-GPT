@@ -6,20 +6,54 @@ import re
 import pandas as pd
 from dataclasses import dataclass
 from typing import List
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Get API key from environment variables
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    raise ValueError("OPENAI_API_KEY not found in environment variables")
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-openai.api_key = "your_open_ai_key"
-# 3.5
-#assistant_id = "asst_l6McDS1eeFqRSRucPUerwD3x"
-# 4o
-assistant_id = "asst_8AOYbeZmLBx8Uic6tFUGBjhF"
+# 4o fine tuning
+assistant_id = "asst_qsyJh2SEYrnuYDiSs5NgdaXx"
+
+#4o
+# assistant_id = "asst_WRF0J9P9EiZ70DcntBSlapWB"
 
 # Initialize the global counter
 interaction_counter = 0
 
 #Initialize the global verification status
 verification_status = []
+
+def save_thread_to_file(thread_id, filename):
+    # Retrieve all messages from the thread
+    messages = openai.beta.threads.messages.list(
+        thread_id=thread_id,
+        order="asc"  # Get messages in chronological order
+    )
+    
+    # Open file for writing
+    with open(filename, 'w', encoding='utf-8') as file:
+        # Write thread ID as header
+        file.write(f"Thread ID: {thread_id}\n\n")
+        
+        # Write each message to the file
+        for message in messages.data:
+            role = message.role
+            created_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(message.created_at))
+            content = message.content[0].text.value if message.content else "(No content)"
+            
+            file.write(f"=== {role.upper()} [{created_time}] ===\n")
+            file.write(f"{content}\n\n")
+            
+        file.write("=== END OF THREAD ===\n")
+    
+    print(f"Thread saved to {filename}")
 
 class Assistant:
     
@@ -203,6 +237,129 @@ def loop(thread: Thread, message: str) -> bool:
             /// @notice postcondition supply == _totalSupply
             function totalSupply() public view returns (uint256 supply);
         - Output format: return the annotated interface inside code fence (```) to show the code block. RETURN JUST THE CONTRACT ANNOTATED, NOTHING MORE.\n\n
+        Can you please generate a specification given the following ERC interface (delimited by token ```solidity ```)
+       
+        ```solidity
+            pragma solidity >=0.5.0;
+
+            contract IERC721 {
+
+                bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+                mapping (uint256 => address) private _tokenOwner;
+
+                mapping (uint256 => address) private _tokenApprovals;
+
+                mapping (address => uint256) private _ownedTokensCount;
+
+                mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+                bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+                
+                /**
+                    * @notice Count all NFTs assigned to an owner
+                    * @dev NFTs assigned to the zero address are considered invalid, and this
+                    *  function throws for queries about the zero address.
+                    * @param _owner An address for whom to query the balance
+                    * @return The number of NFTs owned by `_owner`, possibly zero
+                    */
+                $ADD POSTCONDITION HERE
+                function balanceOf(address _owner) external view returns (uint256 balance);
+                
+                /**
+                    * @notice Find the owner of an NFT
+                    * @dev NFTs assigned to zero address are considered invalid, and queries
+                    *  about them do throw.
+                    * @param _tokenId The identifier for an NFT
+                    * @return The address of the owner of the NFT
+                    */
+                $ADD POSTCONDITION HERE
+                function ownerOf(uint256 _tokenId) external view returns (address _owner);
+                
+                /**
+                    * @notice Change or reaffirm the approved address for an NFT
+                    * @dev The zero address indicates there is no approved address.
+                    *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+                    *  operator of the current owner.
+                    * @param _approved The new approved NFT controller
+                    * @param _tokenId The NFT to approve
+                    */
+                $ADD POSTCONDITION HERE
+                function approve(address _approved, uint256 _tokenId) external;
+                
+                /**
+                    * @notice Get the approved address for a single NFT
+                    * @dev Throws if `_tokenId` is not a valid NFT.
+                    * @param _tokenId The NFT to find the approved address for
+                    * @return The approved address for this NFT, or the zero address if there is none
+                    */
+                $ADD POSTCONDITION HERE
+                function getApproved(uint256 _tokenId) external view returns (address approved);
+
+                /**
+                    * @notice Enable or disable approval for a third party ("operator") to manage
+                    *  all of `msg.sender`'s assets
+                    * @dev Emits the ApprovalForAll event. The contract MUST allow
+                    *  multiple operators per owner.
+                    * @param _operator Address to add to the set of authorized operators
+                    * @param _approved True if the operator is approved, false to revoke approval
+                    */
+                $ADD POSTCONDITION HERE
+                function setApprovalForAll(address _operator, bool _approved) external;
+                
+                /**
+                    * @notice Query if an address is an authorized operator for another address
+                    * @param _owner The address that owns the NFTs
+                    * @param _operator The address that acts on behalf of the owner
+                    * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+                    */
+                $ADD POSTCONDITION HERE
+                function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+                
+                /**
+                    * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+                    *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+                    *  THEY MAY BE PERMANENTLY LOST
+                    * @dev Throws unless `msg.sender` is the current owner, an authorized
+                    *  operator, or the approved address for this NFT. Throws if `_from` is
+                    *  not the current owner. Throws if `_to` is the zero address. Throws if
+                    *  `_tokenId` is not a valid NFT.
+                    * @param _from The current owner of the NFT
+                    * @param _to The new owner
+                    * @param _tokenId The NFT to transfer
+                    */
+                $ADD POSTCONDITION HERE
+                function transferFrom(address _from, address _to, uint256 _tokenId) external;
+                
+                /**
+                    * @notice Transfers the ownership of an NFT from one address to another address
+                    * @dev This works identically to the other function with an extra data parameter,
+                    *  except this function just sets data to "".
+                    * @param _from The current owner of the NFT
+                    * @param _to The new owner
+                    * @param _tokenId The NFT to transfer
+                    */
+                $ADD POSTCONDITION HERE
+                function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+                
+                /**
+                    * @notice Transfers the ownership of an NFT from one address to another address
+                    * @dev Throws unless `msg.sender` is the current owner, an authorized
+                    *  operator, or the approved address for this NFT. Throws if `_from` is
+                    *  not the current owner. Throws if `_to` is the zero address. Throws if
+                    *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+                    *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+                    *  `onERC721Received` on `_to` and throws if the return value is not
+                    *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+                    * @param _from The current owner of the NFT
+                    * @param _to The new owner
+                    * @param _tokenId The NFT to transfer
+                    * @param data Additional data with no specified format, sent in call to `_to`
+                    */
+                $ADD POSTCONDITION HERE
+                function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+            }
+        ```
         """
         verification_result.output = instructions + verification_result.output
         logging.info("trying again with solc-verify output: " + str(verification_result.output))
@@ -830,6 +987,8 @@ def run_verification_process():
         end_time = time.time()
         duration = end_time - start_time
         annotated_contract = ""
+
+        save_thread_to_file(thread.id, f"thread_run_{i+1}_erc721_[20_1155].txt")
         
         if result:
             annotated_contract = result
