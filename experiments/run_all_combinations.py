@@ -49,38 +49,115 @@ def generate_all_combinations():
     
     # For each contract type as the requested type
     for requested in contract_types:
-        # Empty context - represented as empty string
-        all_combinations.append((requested, requested))
-        
-        # Generate all possible non-empty context combinations
-        context_options = [t for t in contract_types if t != requested]
+        if not requested:  # Skip empty requested type (not valid)
+            continue
+            
+        # Empty context
+        all_combinations.append((requested, ''))
         
         # Single contexts
-        for ctx in context_options:
-            all_combinations.append((requested, ctx))
-        
-        # Add self to context options for combinations including self
-        all_context_options = contract_types.copy()
+        for ctx in contract_types:
+            if ctx:  # Only add non-empty contexts
+                all_combinations.append((requested, ctx))
         
         # Pairs of contexts
-        for pair in itertools.combinations(all_context_options, 2):
-            # Only include if at least one context type is different from requested
-            if pair[0] != requested or pair[1] != requested:
-                all_combinations.append((requested, ','.join(pair)))
+        for pair in itertools.combinations([c for c in contract_types if c], 2):
+            # Use comma-separation instead of underscores
+            all_combinations.append((requested, ','.join(pair)))
         
-        # Triples (all three contract types)
-        if len(all_context_options) == 3:
-            all_combinations.append((requested, ','.join(all_context_options)))
+        # All three contract types as context
+        non_empty_types = [c for c in contract_types if c]
+        if len(non_empty_types) >= 3:
+            # Use comma-separation instead of underscores
+            all_combinations.append((requested, ','.join(non_empty_types)))
     
     return all_combinations
 
-def print_combinations():
+def is_combination_processed(requested, context, assistant_key="4o_mini_multiple"):
+    """Check if a combination has already been processed"""
+    # Convert context string to directory structure
+    if not context:
+        context_dir = "none"
+    else:
+        # Directory names use underscores, but our combinations now use commas
+        context_dir = context.replace(',', '_')
+    
+    # Check only the new directory structure (by assistant key)
+    results_path = f"results_{assistant_key}/{requested}/{context_dir}/{requested}_[{context}].csv"
+    if os.path.exists(results_path):
+        return True
+    
+    # Also check with underscores in the filename for compatibility
+    if ',' in context:
+        results_path = f"results_{assistant_key}/{requested}/{context_dir}/{requested}_[{context.replace(',', '_')}].csv"
+        if os.path.exists(results_path):
+            return True
+    
+    return False
+
+def get_processed_combinations(assistant_key="4o_mini_multiple"):
+    """Find all combinations that have already been processed"""
+    processed = []
+    
+    # Check only the new directory structure (by assistant key)
+    results_dir = f"results_{assistant_key}"
+    if os.path.exists(results_dir):
+        print(f"Checking results directory: {results_dir}")
+        
+        # Check each requested type directory
+        for requested in os.listdir(results_dir):
+            requested_dir = f"{results_dir}/{requested}"
+            if not os.path.isdir(requested_dir):
+                continue
+                
+            # Check each context directory
+            for context_dir in os.listdir(requested_dir):
+                result_dir = f"{requested_dir}/{context_dir}"
+                if not os.path.isdir(result_dir):
+                    continue
+                    
+                print(f'Checking context_dir: {context_dir} in {requested}')
+                    
+                # Check each CSV file
+                for file in os.listdir(result_dir):
+                    if file.endswith('.csv'):
+                        try:
+                            # Extract context from filename pattern: {requested}_[{context}].csv
+                            parts = file.split('[')
+                            if len(parts) > 1:
+                                context = parts[1].split(']')[0]
+                                
+                                # Handle the empty context case
+                                if context_dir == "none" and context == "none":
+                                    processed.append((requested, ""))
+                                else:
+                                    # Convert underscores to commas for multi-context types
+                                    if '_' in context and context != 'none':
+                                        context = context.replace('_', ',')
+                                    processed.append((requested, context))
+                        except Exception as e:
+                            print(f"Warning: Couldn't parse combination from {result_dir}/{file}: {e}")
+    
+    return processed
+
+def print_combinations(combinations=None, processed=None):
     """Print all combinations that will be generated"""
-    combinations = generate_all_combinations()
+    if combinations is None:
+        combinations = generate_all_combinations()
+        
+    if processed is None:
+        processed = get_processed_combinations()
+    
+    processed_set = set(processed)
+    
     print(f"Total combinations: {len(combinations)}")
-    print("Combinations to be run:")
+    print(f"Already processed: {len(processed_set)}")
+    print(f"Remaining to process: {len(combinations) - len(processed_set)}")
+    
+    print("\nCombinations to be run:")
     for i, (requested, context) in enumerate(combinations, 1):
-        print(f"{i}. Requested: {requested}, Context: {context}")
+        status = "DONE" if (requested, context) in processed_set else "TODO"
+        print(f"{i}. Requested: {requested}, Context: {context} - {status}")
 
 def main():
     parser = argparse.ArgumentParser(description='Run all contract verification combinations')
@@ -92,10 +169,24 @@ def main():
                       help='Start from this combination index (1-based, default: 1)')
     parser.add_argument('--end-at', type=int, default=None,
                       help='End at this combination index (inclusive, default: run all)')
+    parser.add_argument('--skip-processed', action='store_true', default=True,
+                      help='Skip combinations that have already been processed (default: True)')
+    parser.add_argument('--force-all', action='store_true',
+                      help='Force running all combinations, even if already processed')
+    parser.add_argument('--assistant', type=str, default='4o_mini_multiple',
+                      choices=['4o_mini', '4o_mini_single', '4o_mini_multiple'],
+                      help='The assistant to use (default: 4o_mini_multiple)')
     args = parser.parse_args()
     
+    # Get all combinations
+    combinations = generate_all_combinations()
+    
+    # Get already processed combinations
+    processed_combinations = get_processed_combinations(args.assistant)
+    processed_set = set(processed_combinations)
+    
     if args.dry_run:
-        print_combinations()
+        print_combinations(combinations, processed_combinations)
         return
         
     # Ensure the logs directory exists
@@ -106,30 +197,39 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = os.path.join(log_dir, f"combination_run_{timestamp}.log")
     
-    # Get all combinations
-    combinations = generate_all_combinations()
+    # Filter out already processed combinations if requested
+    if args.skip_processed and not args.force_all:
+        combinations_to_run = [(req, ctx) for req, ctx in combinations 
+                              if (req, ctx) not in processed_set]
+        print(f"Filtered out {len(combinations) - len(combinations_to_run)} already processed combinations.")
+    else:
+        combinations_to_run = combinations
+    
+    # Slice combinations if start-from or end-at is specified
+    start_idx = max(0, args.start_from - 1)  # Convert to 0-based index
+    end_idx = args.end_at
+    combinations_to_run = combinations_to_run[start_idx:end_idx]
     
     # Write run plan to log
     with open(log_file, 'w') as log:
         log.write(f"Run plan created at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        log.write(f"Total combinations to run: {len(combinations)}\n\n")
+        log.write(f"Total combinations: {len(combinations)}\n")
+        log.write(f"Already processed: {len(processed_set)}\n")
+        log.write(f"Combinations to run in this session: {len(combinations_to_run)}\n\n")
         log.write("Planned combinations:\n")
-        for i, (req, ctx) in enumerate(combinations, 1):
+        for i, (req, ctx) in enumerate(combinations_to_run, 1):
             log.write(f"{i}. Requested: {req}, Context: {ctx}\n")
         log.write("\n")
     
-    # Slice combinations if start-from or end-at is specified
-    start_idx = max(0, args.start_from - 1)  # Convert to 0-based index
-    end_idx = args.end_at if args.end_at is None else args.end_at
-    combinations_to_run = combinations[start_idx:end_idx]
+    total_to_run = len(combinations_to_run)
     
     # Run each combination
-    for i, (requested, context) in enumerate(combinations_to_run, start_idx + 1):
-        print(f"\n[{i}/{len(combinations)}] Running combination: Requested={requested}, Context={context}")
+    for i, (requested, context) in enumerate(combinations_to_run, 1):
+        print(f"\n[{i}/{total_to_run}] Running combination: Requested={requested}, Context={context}")
         
-        # Skip empty requested type (not valid)
-        if not requested:
-            print(f"Skipping combination with empty requested type")
+        # Skip if already processed and we're not forcing re-runs
+        if (requested, context) in processed_set and args.skip_processed and not args.force_all:
+            print(f"Skipping combination - already processed")
             continue
         
         # Build the command
@@ -138,9 +238,9 @@ def main():
             "loop_contract_verifier.py",
             "--requested", requested,
             "--context", context,
-            "--assistant", "4o_mini_single",  # Use default assistant (change if needed)
-            "--runs", "10",       # Default number of runs
-            "--max-iterations", "10"  # Default max iterations
+            "--assistant", args.assistant,
+            "--runs", "10",
+            "--max-iterations", "10"
         ]
         
         # Run the command and capture exit code
@@ -162,7 +262,7 @@ def main():
             time.sleep(60)
         
         # Small delay between runs to let system resources settle
-        if i < len(combinations):
+        if i < total_to_run:
             delay = args.delay
             print(f"Waiting {delay} seconds before next combination...")
             time.sleep(delay)
@@ -170,6 +270,4 @@ def main():
     print(f"\nAll combinations completed! Log file: {log_file}")
 
 if __name__ == "__main__":
-    # Uncomment to print all combinations without running them
-    # print_combinations()
     main() 

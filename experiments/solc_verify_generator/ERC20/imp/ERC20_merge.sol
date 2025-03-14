@@ -31,7 +31,7 @@ contract ERC20 is IERC20 {
     /**
      * @dev Total number of tokens in existence.
      */
-    ///@notice postcondition supply == _totalSupply
+    ///@notice postcondition _totalSupply == supply
 
     function totalSupply()  public view returns (uint256 supply) {
         return _totalSupply;
@@ -65,8 +65,8 @@ contract ERC20 is IERC20 {
      * @param _to The address _to transfer _to.
      * @param _value The amount _to be transferred.
      */
-    ///@notice  postcondition ( ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender] ) - _value  && msg.sender  != _to ) || ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender] ) && msg.sender  == _to ) )
-/// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  && msg.sender  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) && msg.sender  == _to ) )
+    ///@notice postcondition ( _balances[msg.sender] == __verifier_old_uint(_balances[msg.sender]) - val && msg.sender != t )
+/// @notice postcondition ( _balances[t] == __verifier_old_uint(_balances[t]) + val && msg.sender != t )
 
     function transfer(address _to, uint256 _value)  public returns (bool success) {
         _transfer(msg.sender, _to, _value);
@@ -82,7 +82,7 @@ contract ERC20 is IERC20 {
      * @param spender The address which will spend the funds.
      * @param _value The amount of tokens to be spent.
      */
-    ///@notice  postcondition (_allowed[msg.sender][_spender] == _value && success) || (_allowed[msg.sender][_spender] == __verifier_old_uint(_allowed[msg.sender][_spender]) && !success)
+    ///@notice postcondition _allowed[msg.sender][_spender] == val
 
     function approve(address _spender, uint256 _value)  public returns (bool success) {
         _approve(msg.sender, _spender, _value);
@@ -97,9 +97,9 @@ contract ERC20 is IERC20 {
      * @param to address The address which you want to transfer to
      * @param value uint256 the amount of tokens to be transferred
      */
-    ///@notice  postcondition ( ( _balances[_from] ==  __verifier_old_uint ( _balances[_from] ) - _value  &&  _from  != _to ) || ( _balances[_from] ==  __verifier_old_uint ( _balances[_from] ) &&  _from  == _to ) )
-/// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  &&  _from  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) &&  _from  == _to ) )
-/// @notice  postcondition ( _allowed[_from][msg.sender] ==  __verifier_old_uint ( _allowed[_from][msg.sender] ) - _value && success) || ( _allowed[_from][msg.sender] ==  __verifier_old_uint ( _allowed[_from][msg.sender]) && !success)
+    ///@notice postcondition ( _balances[sender] == __verifier_old_uint(_balances[sender]) - val && sender != t )
+/// @notice postcondition ( _balances[t] == __verifier_old_uint(_balances[t]) + val && sender != t )
+/// @notice postcondition _allowed[sender][msg.sender] == __verifier_old_uint(_allowed[sender][msg.sender]) - val
 
     function transferFrom(address _from, address _to, uint256 _value)  public returns (bool success) {
         _transfer(_from, _to, _value);

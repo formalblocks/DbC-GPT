@@ -80,7 +80,7 @@ interaction_counter = 0
 # Initialize the global verification status
 verification_status = []
 
-def save_thread_to_file(thread_id, requested_type, context_str, run_number):
+def save_thread_to_file(thread_id, requested_type, context_str, assistant_key, run_number):
     """
     Save thread to a file organized in directories by request type and context
     
@@ -92,8 +92,7 @@ def save_thread_to_file(thread_id, requested_type, context_str, run_number):
     """
     try:
         # Create directory structure
-        base_dir = "threads"
-        combo_dir = f"{base_dir}/{requested_type}/{context_str}"
+        combo_dir = f"threads_{assistant_key}/{requested_type}/{context_str}"
         os.makedirs(combo_dir, exist_ok=True)
         
         # Define filename
@@ -251,12 +250,12 @@ class Interaction:
                 status = self.status
                 logging.info("awaiting for a response. status: " + str(status))
                 
-                if status == "failed":
+                if status == "failed" or status == "expired":
                     error_info = self._run.last_error if hasattr(self._run, 'last_error') else "Unknown error"
-                    logging.error(f"Run failed: {error_info}")
+                    logging.error(f"Run {status}: {error_info}")
                     # Additional wait time if a run fails before retrying
                     time.sleep(10)
-                    self._create_run()  # Create a new run after failure
+                    self._create_run()  # Create a new run after failure or expiration
                     status = self.status
                 
                 # Add a random sleep time to avoid hitting rate limits
@@ -520,7 +519,7 @@ def run_verification_process(requested_type, context_types, assistant_key="4o_mi
     file_prefix = f"{requested_type}_[{context_str}]"
     
     # Create results directory
-    results_dir = f"results/{requested_type}/{context_str}"
+    results_dir = f"results_{assistant_key}/{requested_type}/{context_str}"
     os.makedirs(results_dir, exist_ok=True)
     
     # Generate the prompt
@@ -541,7 +540,7 @@ def run_verification_process(requested_type, context_types, assistant_key="4o_mi
         annotated_contract = ""
 
         # Save thread to file
-        save_result = save_thread_to_file(thread.id, requested_type, context_str, i+1)
+        save_result = save_thread_to_file(thread.id, requested_type, context_str, assistant_key, i+1)
         if not save_result:
             print(f"WARNING: Failed to save thread file for run {i+1}")
         
