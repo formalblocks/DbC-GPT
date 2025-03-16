@@ -1,11 +1,5 @@
 pragma solidity >= 0.5.0;
 
-import "./IERC3156FlashLender.sol";
-import "./IERC3156FlashBorrower.sol";
-import "./IVatDaiFlashLoanReceiver.sol";
-import "./VatAbstract.sol";
-import "./DaiJoinAbstract.sol";
-import "./DaiAbstract.sol";
 
 interface VatLike {
     function dai(address) external view returns (uint256);
@@ -68,23 +62,77 @@ contract DssFlash is IERC3156FlashLender {
     uint256 constant WAD = 10 ** 18;
     uint256 constant RAY = 10 ** 27;
     uint256 constant RAD = 10 ** 45;
-    function add(uint256 x, uint256 y) internal pure returns (uint256 z);
-    
-    function mul(uint256 x, uint256 y) internal pure returns (uint256 z);
+    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require((z = x + y) >= x);
+    }
+    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require(y == 0 || (z = x * y) / y == x);
+    }
 
-    $ADD POSTCONDITION HERE
-    function maxFlashLoan(address token) external  view returns (uint256 maxLoan);
+    $ ADD POSTCONDITION HERE
+    function maxFlashLoan(address token) external  view returns (uint256 maxLoan) {
+        if (token == address(dai) && locked == 0) {
+            return line;
+        } else {
+            return 0;
+        }
+    }
 
-    $ADD POSTCONDITION HERE
-    function flashFee(address token, uint256 amount) external  view returns (uint256 fee);
+    $ ADD POSTCONDITION HERE
+    function flashFee(address token, uint256 amount) external  view returns (uint256 fee) {
+        require(token == address(dai), "DssFlash/token-unsupported");
+        return mul(amount, toll) / WAD;
+    }
 
-    $ADD POSTCONDITION HERE
-    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external  lock returns (bool flash);
+    $ ADD POSTCONDITION HERE
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external lock returns (bool flash) {
+        require(token == address(dai), "DssFlash/token-unsupported");
+        require(amount <= line, "DssFlash/ceiling-exceeded");
+
+        uint256 rad = mul(amount, RAY);
+        uint256 fee = mul(amount, toll) / WAD;
+        uint256 total = add(amount, fee);
+
+        vat.suck(address(this), address(this), rad);
+        daiJoin.exit(address(receiver), amount);
+
+        emit FlashLoan(address(receiver), token, amount, fee);
+
+        require(
+            receiver.onFlashLoan(msg.sender, token, amount, fee, data) == keccak256("ERC3156FlashBorrower.onFlashLoan"),
+            "IERC3156: Callback failed"
+        );
+        
+        dai.transferFrom(address(receiver), address(this), total);
+        daiJoin.join(address(this), total);
+        vat.heal(rad);
+        vat.move(address(this), vow, mul(fee, RAY));
+        
+        return true;  // Add this explicit return statement
+    }
 
     // --- Vat Dai Flash Loan ---
     function vatDaiFlashLoan(
         IVatDaiFlashLoanReceiver receiver,      // address of conformant IVatDaiFlashLoanReceiver
         uint256 amount,                         // amount to flash loan [rad]
         bytes calldata data                     // arbitrary data to pass to the receiver
-    ) external lock;
+    ) external lock {
+        require(amount <= mul(line, RAY), "DssFlash/ceiling-exceeded");
+
+        uint256 fee = mul(amount, toll) / WAD;
+        uint256 total = add(amount, fee);
+
+        vat.suck(address(this), address(receiver), amount);
+
+        emit VatDaiFlashLoan(address(receiver), amount, fee);
+
+        require(
+            receiver.onVatDaiFlashLoan(msg.sender, amount, fee, data) == keccak256("IVatDaiFlashLoanReceiver.onVatDaiFlashLoan"),
+            "DssFlash/callback-failed"
+        );
+
+        vat.move(address(receiver), address(this), amount);
+        vat.move(address(receiver), vow, fee);
+        vat.heal(amount);
+    }
 }

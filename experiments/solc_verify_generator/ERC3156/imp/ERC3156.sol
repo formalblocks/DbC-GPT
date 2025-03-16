@@ -91,12 +91,12 @@ contract DssFlash is IERC3156FlashLender {
         return mul(amount, toll) / WAD;
     }
 
-    ///  @notice postcondition token == address (dai)
+    ///  @notice postcondition token == address(dai)
     ///  @notice postcondition amount <= line
     ///  @notice postcondition __verifier_old_address (token) == token
     ///  @notice postcondition __verifier_old_uint (amount) == amount
-    ///  @notice postcondition flash 
-    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external  lock returns (bool flash) {
+    ///  @notice postcondition flash == true
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external lock returns (bool flash) {
         require(token == address(dai), "DssFlash/token-unsupported");
         require(amount <= line, "DssFlash/ceiling-exceeded");
 
@@ -118,6 +118,8 @@ contract DssFlash is IERC3156FlashLender {
         daiJoin.join(address(this), total);
         vat.heal(rad);
         vat.move(address(this), vow, mul(fee, RAY));
+        
+        return true;  // Add this explicit return statement
     }
 
     // --- Vat Dai Flash Loan ---

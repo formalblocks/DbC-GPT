@@ -1,11 +1,5 @@
 pragma solidity >= 0.5.0;
 
-import "./IERC3156FlashLender.sol";
-import "./IERC3156FlashBorrower.sol";
-import "./IVatDaiFlashLoanReceiver.sol";
-import "./VatAbstract.sol";
-import "./DaiJoinAbstract.sol";
-import "./DaiAbstract.sol";
 
 interface VatLike {
     function dai(address) external view returns (uint256);
@@ -14,7 +8,7 @@ interface VatLike {
     function suck(address,address,uint256) external;
 }
 
-contract DssFlash is IERC3156FlashLender {
+contract ERC3156FlashLender {
 
     // --- Auth ---
     function rely(address guy) external auth { wards[guy] = 1; emit Rely(guy); }
@@ -69,7 +63,7 @@ contract DssFlash is IERC3156FlashLender {
     uint256 constant RAY = 10 ** 27;
     uint256 constant RAD = 10 ** 45;
     function add(uint256 x, uint256 y) internal pure returns (uint256 z);
-    
+
     function mul(uint256 x, uint256 y) internal pure returns (uint256 z);
 
     /// @notice postcondition maxLoan == line && token == address(dai) || maxLoan == 0 
@@ -79,12 +73,12 @@ contract DssFlash is IERC3156FlashLender {
     /// @notice postcondition fee == (amount * toll) / WAD
     function flashFee(address token, uint256 amount) external  view returns (uint256 fee);
 
-    ///  @notice postcondition token == address (dai)
+    ///  @notice postcondition token == address(dai)
     ///  @notice postcondition amount <= line
     ///  @notice postcondition __verifier_old_address (token) == token
     ///  @notice postcondition __verifier_old_uint (amount) == amount
-    ///  @notice postcondition flash 
-    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external  lock returns (bool flash);
+    ///  @notice postcondition flash == true
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external lock returns (bool flash);
 
     // --- Vat Dai Flash Loan ---
     function vatDaiFlashLoan(

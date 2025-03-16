@@ -285,6 +285,7 @@ class SolcVerifyWrapper:
         "erc20": './solc_verify_generator/ERC20/templates/imp_spec_merge.template',
         "erc721": './solc_verify_generator/ERC721/templates/imp_spec_merge.template',
         "erc1155": './solc_verify_generator/ERC1155/templates/imp_spec_merge.template',
+        "erc3156": './solc_verify_generator/ERC3156/templates/imp_spec_merge.template',
     }
     
     # Merge paths for different ERC standards
@@ -292,6 +293,7 @@ class SolcVerifyWrapper:
         "erc20": './solc_verify_generator/ERC20/imp/ERC20_merge.sol',
         "erc721": './solc_verify_generator/ERC721/imp/ERC721_merge.sol',
         "erc1155": './solc_verify_generator/ERC1155/imp/ERC1155_merge.sol',
+        "erc3156": './solc_verify_generator/ERC3156/imp/ERC3156_merge.sol',
     }
 
     @classmethod
@@ -312,6 +314,7 @@ class SolcVerifyWrapper:
         # Use appropriate template and merge paths based on requested_type
         template_path = cls.TEMPLATE_PATHS.get(requested_type, cls.TEMPLATE_PATHS[requested_type])
         merge_path = cls.MERGE_PATHS.get(requested_type, cls.MERGE_PATHS[requested_type])
+
         
         # Make sure directories exist
         os.makedirs(os.path.dirname(cls.SPEC_FILE_PATH), exist_ok=True)
@@ -458,7 +461,6 @@ def loop(thread: Thread, message: str, max_iterations=10, requested_type="erc20"
     if not solidity_code:
         print("ERROR - No Solidity code found in the response.")
         return False
-    
     try:
         # Pass the requested_type to the verify method
         verification_result: VerificationResult = SolcVerifyWrapper.verify(solidity_code, requested_type)
