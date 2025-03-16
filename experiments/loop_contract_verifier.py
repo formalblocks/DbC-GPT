@@ -32,19 +32,22 @@ ASSISTANT_IDS = {
 INTERFACE_PATHS = {
     "erc20": "../assets/file_search/erc20_interface.md",
     "erc721": "../assets/file_search/erc721_interface.md",
-    "erc1155": "../assets/file_search/erc1155_interface.md"
+    "erc1155": "../assets/file_search/erc1155_interface.md",
+    "erc3156": "../assets/file_search/erc3156_interface.md"
 }
 
 EIP_PATHS = {
     "erc20": "../assets/file_search/erc-20.md",
     "erc721": "../assets/file_search/erc-721.md",
     "erc1155": "../assets/file_search/erc-1155.md",
+    "erc3156": "../assets/file_search/erc-3156.md",
 }
 
 REFERENCE_SPEC_PATHS = {
     "erc20": "../assets/file_search/erc20_ref_spec.md",
     "erc721": "../assets/file_search/erc721_ref_spec.md",
     "erc1155": "../assets/file_search/erc1155_ref_spec.md",
+    "erc3156": "../assets/file_search/erc3156_ref_spec.md",
     "": ""
 }
 
@@ -564,7 +567,8 @@ def run_verification_process(requested_type, context_types, assistant_key="4o_mi
 
 def main():
     parser = argparse.ArgumentParser(description='Run contract verification with different contexts')
-    parser.add_argument('--requested', type=str, required=True, choices=['erc20', 'erc721', 'erc1155'],
+    parser.add_argument('--requested', type=str, required=True, 
+                        choices=['erc20', 'erc721', 'erc1155', 'erc3156'],
                         help='The contract type to verify')
     parser.add_argument('--context', type=str, required=True,
                         help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155")')

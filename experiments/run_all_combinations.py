@@ -44,7 +44,7 @@ def run_command(cmd, log_file):
 
 def generate_all_combinations():
     """Generate all possible combinations of requested and context contracts"""
-    contract_types = ['erc20', 'erc721', 'erc1155', '']
+    contract_types = ['erc20', 'erc721', 'erc1155', 'erc3156', '']
     all_combinations = []
     
     # For each contract type as the requested type
@@ -65,11 +65,11 @@ def generate_all_combinations():
             # Use comma-separation instead of underscores
             all_combinations.append((requested, ','.join(pair)))
         
-        # All three contract types as context
-        non_empty_types = [c for c in contract_types if c]
-        if len(non_empty_types) >= 3:
-            # Use comma-separation instead of underscores
-            all_combinations.append((requested, ','.join(non_empty_types)))
+        # All three or more contract types as context
+        for n in range(3, len([c for c in contract_types if c]) + 1):
+            for combo in itertools.combinations([c for c in contract_types if c], n):
+                # Use comma-separation
+                all_combinations.append((requested, ','.join(combo)))
     
     return all_combinations
 
