@@ -1,144 +1,192 @@
 pragma solidity >= 0.5.0;
 
-import "./IERC3156FlashLender.sol";
-import "./IERC3156FlashBorrower.sol";
-import "./IVatDaiFlashLoanReceiver.sol";
-import "./VatAbstract.sol";
-import "./DaiJoinAbstract.sol";
-import "./DaiAbstract.sol";
-
-interface VatLike {
-    function dai(address) external view returns (uint256);
-    function move(address src, address dst, uint256 rad) external;
-    function heal(uint256 rad) external;
-    function suck(address,address,uint256) external;
+interface IERC3156FlashBorrower {
+    /**
+     * @dev Receive a flash loan.
+     * @param initiator The initiator of the loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @param fee The additional amount of tokens to repay.
+     * @param data Arbitrary data structure, intended to contain user-defined parameters.
+     * @return The keccak256 hash of "ERC3156FlashBorrower.onFlashLoan"
+     */
+    function onFlashLoan(
+        address initiator,
+        address token,
+        uint256 amount,
+        uint256 fee,
+        bytes calldata data
+    ) external returns (bytes32);
 }
 
-contract DssFlash is IERC3156FlashLender {
+interface IERC3156FlashLender {
+    /**
+     * @dev The amount of currency available to be lent.
+     * @param token The loan currency.
+     * @return The amount of `token` that can be borrowed.
+     */
+    function maxFlashLoan(
+        address token
+    ) external view returns (uint256);
 
-    // --- Auth ---
-    function rely(address guy) external auth { wards[guy] = 1; emit Rely(guy); }
-    function deny(address guy) external auth { wards[guy] = 0; emit Deny(guy); }
-    mapping (address => uint256) public wards;
-    modifier auth {
-        require(wards[msg.sender] == 1, "DssFlash/not-authorized");
-        _;
-    }
+    /**
+     * @dev The fee to be charged for a given loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+    function flashFee(
+        address token,
+        uint256 amount
+    ) external view returns (uint256);
 
-    // --- Data ---
-    VatAbstract public         vat;
-    address public             vow;
-    DaiJoinAbstract public     daiJoin;
-    DaiAbstract public         dai;
-    
-    uint256 public                      line;       // Debt Ceiling  [wad]
-    uint256 public                      toll;       // Fee           [wad]
-    uint256 private                     locked;     // Reentrancy guard
+    /**
+     * @dev Initiate a flash loan.
+     * @param receiver The receiver of the tokens in the loan, and the receiver of the callback.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @param data Arbitrary data structure, intended to contain user-defined parameters.
+     */
+    function flashLoan(
+        IERC3156FlashBorrower receiver,
+        address token,
+        uint256 amount,
+        bytes calldata data
+    ) external returns (bool);
+}
 
-    // --- Events ---
-    event Rely(address indexed usr);
-    event Deny(address indexed usr);
-    event File(bytes32 indexed what, uint256 data);
-    event File(bytes32 indexed what, address data);
-    event FlashLoan(address indexed receiver, address token, uint256 amount, uint256 fee);
-    event VatDaiFlashLoan(address indexed receiver, uint256 amount, uint256 fee);
+interface IERC20 {
+    /// @return total amount of tokens
+    function totalSupply() external returns (uint);
 
-    modifier lock {
-        require(locked == 0, "DssFlash/reentrancy-guard");
-        locked = 1;
-        _;
-        locked = 0;
-    }
+    /// @notice send `_value` token to `_to` from `msg.sender`
+    /// @param _to The address of the recipient
+    /// @param _value The amount of token to be transferred
+    /// @return Whether the transfer was successful or not
+    function transfer(address _to, uint _value) external returns (bool);
 
-    // --- Init ---
-    constructor(address vat_, address vow_, address daiJoin_) public {
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+    /// @notice send `_value` token to `_to` from `_from` on the condition it is approved by `_from`
+    /// @param _from The address of the sender
+    /// @param _to The address of the recipient
+    /// @param _value The amount of token to be transferred
+    /// @return Whether the transfer was successful or not
+    function transferFrom(address _from, address _to, uint _value) external returns (bool);
 
-        vat = VatAbstract(vat_);
-        vow = vow_;
-        daiJoin = DaiJoinAbstract(daiJoin_);
-        dai = DaiAbstract(DaiJoinAbstract(daiJoin_).dai());
+    /// @notice `msg.sender` approves `_addr` to spend `_value` tokens
+    /// @param _spender The address of the account able to transfer the tokens
+    /// @param _value The amount of wei to be approved for transfer
+    /// @return Whether the approval was successful or not
+    function approve(address _spender, uint _value) external returns (bool);
 
-        VatAbstract(vat_).hope(daiJoin_);
-        DaiAbstract(DaiJoinAbstract(daiJoin_).dai()).approve(daiJoin_, uint256(-1));
-    }
+    /// @param _owner The address from which the balance will be retrieved
+    /// @return The balance
+    function balanceOf(address _owner) external view returns (uint);
 
-    // --- Math ---
-    uint256 constant WAD = 10 ** 18;
-    uint256 constant RAY = 10 ** 27;
-    uint256 constant RAD = 10 ** 45;
-    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x + y) >= x);
-    }
-    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require(y == 0 || (z = x * y) / y == x);
-    }
+    /// @param _owner The address of the account owning tokens
+    /// @param _spender The address of the account able to transfer the tokens
+    /// @return Amount of remaining tokens allowed to spent
+    function allowance(address _owner, address _spender) external returns (uint);
+}
+/**
+ * @author Alberto Cuesta Cañada
+ * @dev Extension of {ERC20} that allows flash lending.
+ */
+contract FlashLender is IERC3156FlashLender {
 
-    $maxFlashLoan
-    function maxFlashLoan(address token) external  view returns (uint256 maxLoan) {
-        if (token == address(dai) && locked == 0) {
-            return line;
-        } else {
-            return 0;
+    bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
+    mapping(address => bool) public supportedTokens;
+    uint256 public fee; //  1 == 0.01 %.
+
+
+    /**
+     * @param supportedTokens_ Token contracts supported for flash lending.
+     * @param fee_ The percentage of the loan `amount` that needs to be repaid, in addition to `amount`.
+     */
+    constructor(
+        address[] memory supportedTokens_,
+        uint256 fee_
+    ) public {
+        for (uint256 i = 0; i < supportedTokens_.length; i++) {
+            supportedTokens[supportedTokens_[i]] = true;
         }
+        fee = fee_;
     }
 
-    $flashFee
-    function flashFee(address token, uint256 amount) external  view returns (uint256 fee) {
-        require(token == address(dai), "DssFlash/token-unsupported");
-        return mul(amount, toll) / WAD;
-    }
-
+    /**
+     * @dev Loan `amount` tokens to `receiver`, and takes it back plus a `flashFee` after the callback.
+     * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @param data A data parameter to be passed on to the `receiver` for any custom use.
+     */
     $flashLoan
-    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external lock returns (bool flash) {
-        require(token == address(dai), "DssFlash/token-unsupported");
-        require(amount <= line, "DssFlash/ceiling-exceeded");
-
-        uint256 rad = mul(amount, RAY);
-        uint256 fee = mul(amount, toll) / WAD;
-        uint256 total = add(amount, fee);
-
-        vat.suck(address(this), address(this), rad);
-        daiJoin.exit(address(receiver), amount);
-
-        emit FlashLoan(address(receiver), token, amount, fee);
-
+    function flashLoan(
+        IERC3156FlashBorrower receiver,
+        address token,
+        uint256 amount,
+        bytes calldata data
+    ) external returns(bool flash) {
         require(
-            receiver.onFlashLoan(msg.sender, token, amount, fee, data) == keccak256("ERC3156FlashBorrower.onFlashLoan"),
-            "IERC3156: Callback failed"
+            supportedTokens[token],
+            "FlashLender: Unsupported currency"
         );
-        
-        dai.transferFrom(address(receiver), address(this), total);
-        daiJoin.join(address(this), total);
-        vat.heal(rad);
-        vat.move(address(this), vow, mul(fee, RAY));
-        
-        return true;  // Add this explicit return statement
+        uint256 fee = _flashFee(token, amount);
+        require(
+            IERC20(token).transfer(address(receiver), amount),
+            "FlashLender: Transfer failed"
+        );
+        require(
+            receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS,
+            "FlashLender: Callback failed"
+        );
+        require(
+            IERC20(token).transferFrom(address(receiver), address(this), amount + fee),
+            "FlashLender: Repay failed"
+        );
+        return true;
     }
 
-    // --- Vat Dai Flash Loan ---
-    function vatDaiFlashLoan(
-        IVatDaiFlashLoanReceiver receiver,      // address of conformant IVatDaiFlashLoanReceiver
-        uint256 amount,                         // amount to flash loan [rad]
-        bytes calldata data                     // arbitrary data to pass to the receiver
-    ) external lock {
-        require(amount <= mul(line, RAY), "DssFlash/ceiling-exceeded");
-
-        uint256 fee = mul(amount, toll) / WAD;
-        uint256 total = add(amount, fee);
-
-        vat.suck(address(this), address(receiver), amount);
-
-        emit VatDaiFlashLoan(address(receiver), amount, fee);
-
+    /**
+     * @dev The fee to be charged for a given loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+     $flashFee
+    function flashFee(
+        address token,
+        uint256 amount
+    ) external view returns (uint256 result) {
         require(
-            receiver.onVatDaiFlashLoan(msg.sender, amount, fee, data) == keccak256("IVatDaiFlashLoanReceiver.onVatDaiFlashLoan"),
-            "DssFlash/callback-failed"
+            supportedTokens[token],
+            "FlashLender: Unsupported currency"
         );
+        return _flashFee(token, amount);
+    }
 
-        vat.move(address(receiver), address(this), amount);
-        vat.move(address(receiver), vow, fee);
-        vat.heal(amount);
+    /**
+     * @dev The fee to be charged for a given loan. Internal function with no checks.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+    function _flashFee(
+        address token,
+        uint256 amount
+    ) internal view returns (uint256) {
+        return amount * fee / 10000;
+    }
+
+    /**
+     * @dev The amount of currency available to be lent.
+     * @param token The loan currency.
+     * @return The amount of `token` that can be borrowed.
+     */
+     $maxFlashLoan
+    function maxFlashLoan(
+        address token
+    ) external view returns (uint256 maxLoan) {
+        return supportedTokens[token] ? IERC20(token).balanceOf(address(this)) : 0;
     }
 }
+

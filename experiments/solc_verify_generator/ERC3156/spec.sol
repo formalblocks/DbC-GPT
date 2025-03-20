@@ -1,41 +1,195 @@
-pragma solidity >=0.5.0;
+pragma solidity >= 0.5.0;
 
-contract ERC20 {
-
-    mapping (address => uint) _balances;
-    mapping (address => mapping (address => uint)) _allowed;
-    uint public _totalSupply;
-
-    event Transfer(address indexed from, address indexed to, uint value);
-    event Approval(address indexed owner, address indexed spender, uint value);
-   
-    /// @notice Transfer `value` tokens to address `to`
-    /// @param to Receiver of the tokens
-    /// @param value Amount of tokens to transfer
-    /// @return success True if transfer was successful
-    function transfer(address to, uint value) public returns (bool success);
-
-    /// @notice Transfer `value` tokens from address `from` to address `to`
-    /// @param from Sender of tokens
-    /// @param to Receiver of the tokens
-    /// @param value Amount of tokens to be transferred
-    /// @return success True if transfer was successful
-    function transferFrom(address from, address to, uint value) public returns (bool success);
-
-    /// @notice Approve spender to withdraw from your account, multiple times, up to the `value` amount.
-    /// @param spender Address authorized to spend on your behalf
-    /// @param value Maximum amount they can withdraw
-    ///! @return success True if approval was successful
-    function approve(address spender, uint value) public returns (bool success);
-
-    /// @notice Returns the number of tokens owned by `owner`.
-    /// @param owner Token owner
-    /// @return balance Number of tokens owned by the owner
-    function balanceOf(address owner) public view returns (uint balance);
-
-    /// @notice Returns the amount of tokens that an owner has allowed another user to withdraw.
-    /// @param owner Token owner
-    /// @param spender Spender's address
-    /// @return remaining Amount of remaining tokens allowed to be spent
-    function allowance(address owner, address spender) public view returns (uint remaining);
+interface IERC3156FlashBorrower {
+    /**
+     * @dev Receive a flash loan.
+     * @param initiator The initiator of the loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @param fee The additional amount of tokens to repay.
+     * @param data Arbitrary data structure, intended to contain user-defined parameters.
+     * @return The keccak256 hash of "ERC3156FlashBorrower.onFlashLoan"
+     */
+    function onFlashLoan(
+        address initiator,
+        address token,
+        uint256 amount,
+        uint256 fee,
+        bytes calldata data
+    ) external returns (bytes32);
 }
+
+interface IERC3156FlashLender {
+    /**
+     * @dev The amount of currency available to be lent.
+     * @param token The loan currency.
+     * @return The amount of `token` that can be borrowed.
+     */
+    function maxFlashLoan(
+        address token
+    ) external view returns (uint256);
+
+    /**
+     * @dev The fee to be charged for a given loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+    function flashFee(
+        address token,
+        uint256 amount
+    ) external view returns (uint256);
+
+    /**
+     * @dev Initiate a flash loan.
+     * @param receiver The receiver of the tokens in the loan, and the receiver of the callback.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @param data Arbitrary data structure, intended to contain user-defined parameters.
+     */
+    function flashLoan(
+        IERC3156FlashBorrower receiver,
+        address token,
+        uint256 amount,
+        bytes calldata data
+    ) external returns (bool);
+}
+
+interface IERC20 {
+    /// @return total amount of tokens
+    function totalSupply() external returns (uint);
+
+    /// @notice send `_value` token to `_to` from `msg.sender`
+    /// @param _to The address of the recipient
+    /// @param _value The amount of token to be transferred
+    /// @return Whether the transfer was successful or not
+    function transfer(address _to, uint _value) external returns (bool);
+
+    /// @notice send `_value` token to `_to` from `_from` on the condition it is approved by `_from`
+    /// @param _from The address of the sender
+    /// @param _to The address of the recipient
+    /// @param _value The amount of token to be transferred
+    /// @return Whether the transfer was successful or not
+    function transferFrom(address _from, address _to, uint _value) external returns (bool);
+
+    /// @notice `msg.sender` approves `_addr` to spend `_value` tokens
+    /// @param _spender The address of the account able to transfer the tokens
+    /// @param _value The amount of wei to be approved for transfer
+    /// @return Whether the approval was successful or not
+    function approve(address _spender, uint _value) external returns (bool);
+
+    /// @param _owner The address from which the balance will be retrieved
+    /// @return The balance
+    function balanceOf(address _owner) external view returns (uint);
+
+    /// @param _owner The address of the account owning tokens
+    /// @param _spender The address of the account able to transfer the tokens
+    /// @return Amount of remaining tokens allowed to spent
+    function allowance(address _owner, address _spender) external returns (uint);
+}
+/**
+ * @author Alberto Cuesta Cañada
+ * @dev Extension of {ERC20} that allows flash lending.
+ */
+contract FlashLender is IERC3156FlashLender {
+
+    bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
+    mapping(address => bool) public supportedTokens;
+    uint256 public fee; //  1 == 0.01 %.
+
+
+    /**
+     * @param supportedTokens_ Token contracts supported for flash lending.
+     * @param fee_ The percentage of the loan `amount` that needs to be repaid, in addition to `amount`.
+     */
+    constructor(
+        address[] memory supportedTokens_,
+        uint256 fee_
+    ) public {
+        for (uint256 i = 0; i < supportedTokens_.length; i++) {
+            supportedTokens[supportedTokens_[i]] = true;
+        }
+        fee = fee_;
+    }
+
+    /**
+     * @dev Loan `amount` tokens to `receiver`, and takes it back plus a `flashFee` after the callback.
+     * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @param data A data parameter to be passed on to the `receiver` for any custom use.
+     */
+    ///  @notice precondition amount >= 0
+    ///  @notice postcondition __verifier_old_address (token) == token
+    ///  @notice postcondition __verifier_old_uint (amount) == amount
+    ///  @notice postcondition flash 
+    function flashLoan(
+        IERC3156FlashBorrower receiver,
+        address token,
+        uint256 amount,
+        bytes calldata data
+    ) external returns(bool flash) {
+        require(
+            supportedTokens[token],
+            "FlashLender: Unsupported currency"
+        );
+        uint256 fee = _flashFee(token, amount);
+        require(
+            IERC20(token).transfer(address(receiver), amount),
+            "FlashLender: Transfer failed"
+        );
+        require(
+            receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS,
+            "FlashLender: Callback failed"
+        );
+        require(
+            IERC20(token).transferFrom(address(receiver), address(this), amount + fee),
+            "FlashLender: Repay failed"
+        );
+        return true;
+    }
+
+    /**
+     * @dev The fee to be charged for a given loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+     /// @notice postcondition result == (amount * fee) / 10000
+     /// @notice postcondition supportedTokens[token]
+    function flashFee(
+        address token,
+        uint256 amount
+    ) external view returns (uint256 result) {
+        require(
+            supportedTokens[token],
+            "FlashLender: Unsupported currency"
+        );
+        return _flashFee(token, amount);
+    }
+
+    /**
+     * @dev The fee to be charged for a given loan. Internal function with no checks.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+    function _flashFee(
+        address token,
+        uint256 amount
+    ) internal view returns (uint256) {
+        return amount * fee / 10000;
+    }
+
+    /**
+     * @dev The amount of currency available to be lent.
+     * @param token The loan currency.
+     * @return The amount of `token` that can be borrowed.
+     */ 
+    function maxFlashLoan(
+        address token
+    ) external view returns (uint256 maxLoan) {
+        return supportedTokens[token] ? IERC20(token).balanceOf(address(this)) : 0;
+    }
+}
+
