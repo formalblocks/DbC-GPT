@@ -1,0 +1,4 @@
+/// @notice postcondition (_balances[account] == __verifier_old_uint(_balances[account]) || ( __verifier_old_uint(_balances[account] ==  _balances[account] ) - numTokens && account != _destinationAddress ) && account == _destinationAddress)
+/// @notice postcondition ( _balances[_destinationAddress] == __verifier_old_uint(_balances[_destinationAddress]) + numTokens && account != _destinationAddress ) || (_balances[_destinationAddress] == __verifier_old_uint(_balances[_destinationAddress]) && account == _destinationAddress)
+/// @notice postcondition __verifier_old_uint(_allowed[account][msg.sender]) - numTokens == _allowed[account][msg.sender] 
+function transferFrom(address account, address _destinationAddress, uint256 numTokens) public returns (bool success);

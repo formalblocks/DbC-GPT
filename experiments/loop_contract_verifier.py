@@ -25,7 +25,14 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 ASSISTANT_IDS = {
     "4o_mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
     "4o_mini_single": "asst_qsyJh2SEYrnuYDiSs5NgdaXx",
-    "4o_mini_multiple": "asst_MmLXOOdQUR77F601oWl8Pszj",
+    "4o_mini_erc20": "asst_UWMifHspYEAkIGyWtHzkWiwD",
+    "4o_mini_erc721": "asst_WgHFp7pTzvutsqYE4zOGRAkc",
+    "4o_mini_erc1155": "asst_lOku2pOPoQ5Kdd2elUlglALf",
+    "4o_mini_erc721_1155": "asst_PgrUKdpgXSrVMyNqDm558yM2",
+    "4o_mini_erc20_1155": "asst_Lvr2qeZs6mMaUmcx40xJGlJS",
+    "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
+    "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe"
+
 }
 
 # Paths to interface templates and EIP docs
@@ -33,21 +40,18 @@ INTERFACE_PATHS = {
     "erc20": "../assets/file_search/erc20_interface.md",
     "erc721": "../assets/file_search/erc721_interface.md",
     "erc1155": "../assets/file_search/erc1155_interface.md",
-    "erc3156": "../assets/file_search/erc3156_interface.md"
 }
 
 EIP_PATHS = {
     "erc20": "../assets/file_search/erc-20.md",
     "erc721": "../assets/file_search/erc-721.md",
     "erc1155": "../assets/file_search/erc-1155.md",
-    "erc3156": "../assets/file_search/erc-3156.md",
 }
 
 REFERENCE_SPEC_PATHS = {
     "erc20": "../assets/file_search/erc20_ref_spec.md",
     "erc721": "../assets/file_search/erc721_ref_spec.md",
     "erc1155": "../assets/file_search/erc1155_ref_spec.md",
-    "erc3156": "../assets/file_search/erc3156_ref_spec.md",
     "": ""
 }
 
@@ -285,7 +289,6 @@ class SolcVerifyWrapper:
         "erc20": './solc_verify_generator/ERC20/templates/imp_spec_merge.template',
         "erc721": './solc_verify_generator/ERC721/templates/imp_spec_merge.template',
         "erc1155": './solc_verify_generator/ERC1155/templates/imp_spec_merge.template',
-        "erc3156": './solc_verify_generator/ERC3156/templates/imp_spec_merge.template',
     }
     
     # Merge paths for different ERC standards
@@ -293,7 +296,6 @@ class SolcVerifyWrapper:
         "erc20": './solc_verify_generator/ERC20/imp/ERC20_merge.sol',
         "erc721": './solc_verify_generator/ERC721/imp/ERC721_merge.sol',
         "erc1155": './solc_verify_generator/ERC1155/imp/ERC1155_merge.sol',
-        "erc3156": './solc_verify_generator/ERC3156/imp/ERC3156_merge.sol',
     }
 
     @classmethod
@@ -570,12 +572,12 @@ def run_verification_process(requested_type, context_types, assistant_key="4o_mi
 def main():
     parser = argparse.ArgumentParser(description='Run contract verification with different contexts')
     parser.add_argument('--requested', type=str, required=True, 
-                        choices=['erc20', 'erc721', 'erc1155', 'erc3156'],
+                        choices=['erc20', 'erc721', 'erc1155'],
                         help='The contract type to verify')
     parser.add_argument('--context', type=str, required=True,
                         help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155")')
     parser.add_argument('--assistant', type=str, default='4o_mini',
-                        choices=['4o_mini', '4o_mini_single', '4o_mini_multiple'], 
+                        choices=['4o_mini', '4o_mini_single', '4o_mini_erc20', '4o_mini_erc721', '4o_mini_erc1155', '4o_mini_erc721_1155', '4o_mini_erc20_1155', '4o_mini_erc20_721', '4o_mini_erc20_721_1155'], 
                         help='The assistant to use')
     parser.add_argument('--runs', type=int, default=10,
                         help='Number of verification runs')

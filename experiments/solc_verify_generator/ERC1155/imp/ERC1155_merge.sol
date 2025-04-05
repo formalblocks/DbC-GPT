@@ -74,7 +74,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `account` cannot be the zero address.
      */
-    ///@notice postcondition _balances[_id][_owner] == balance
+    ///@notice postcondition _balances[_id][_owner] == balance  
 
     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance) {
         require(_owner != address(0), "ERC1155: balance query for the zero address");
@@ -88,7 +88,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `accounts` and `ids` must have the same length.
      */
-    ///@notice postcondition batchBalances.length == _owners.length
+    ///@notice postcondition batchBalances.length == _owners.length 
 /// @notice postcondition batchBalances.length == _ids.length
 /// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
 
@@ -120,7 +120,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     /**
      * @dev See {IERC1155-setApprovalForAll}.
      */
-    ///@notice  postcondition _operatorApprovals[msg.sender][_operator] == _approved
+    ///@notice postcondition _operatorApprovals[msg.sender][_operator] == _approved 
 
     function setApprovalForAll(address _operator, bool _approved) public   {
         require(_msgSender() != _operator, "ERC1155: setting approval status for self");
@@ -137,9 +137,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 
     /// @notice precondition _from != msg.sender
     /// @notice precondition !_operatorApprovals[_from][msg.sender]
-    ///@notice postcondition _to != address(0)
+    ///@notice postcondition _to != address(0) 
 /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
-/// @notice postcondition __verifier_old_uint ( _balances[_id][_from] ) >= _value
+/// @notice postcondition __verifier_old_uint ( _balances[_id][_from] ) >= _value    
 /// @notice postcondition _balances[_id][_from] == __verifier_old_uint ( _balances[_id][_from] ) - _value
 /// @notice postcondition _balances[_id][_to] == __verifier_old_uint ( _balances[_id][_to] ) + _value
 

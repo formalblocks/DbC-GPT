@@ -1,0 +1,2 @@
+/// @notice postcondition (_allowed[msg.sender][s] == __verifier_old_uint(_allowed[msg.sender][s]) && !success) || (_allowed[msg.sender][s] == v && success) 
+function approve(address s, uint256 v) public returns (bool success);

@@ -44,7 +44,7 @@ def run_command(cmd, log_file):
 
 def generate_all_combinations():
     """Generate all possible combinations of requested and context contracts"""
-    contract_types = ['erc20', 'erc721', 'erc1155', 'erc3156', '']
+    contract_types = ['erc20', 'erc721', 'erc1155', '']
     all_combinations = []
     
     # For each contract type as the requested type
@@ -73,7 +73,7 @@ def generate_all_combinations():
     
     return all_combinations
 
-def is_combination_processed(requested, context, assistant_key="4o_mini_multiple"):
+def is_combination_processed(requested, context, assistant_key="4o_mini"):
     """Check if a combination has already been processed"""
     # Convert context string to directory structure
     if not context:
@@ -173,9 +173,9 @@ def main():
                       help='Skip combinations that have already been processed (default: True)')
     parser.add_argument('--force-all', action='store_true',
                       help='Force running all combinations, even if already processed')
-    parser.add_argument('--assistant', type=str, default='4o_mini_multiple',
-                      choices=['4o_mini', '4o_mini_single', '4o_mini_multiple'],
-                      help='The assistant to use (default: 4o_mini_multiple)')
+    parser.add_argument('--assistant', type=str, default='4o_mini',
+                      choices=['4o_mini', '4o_mini_single', '4o_mini_erc20', '4o_mini_erc721', '4o_mini_erc1155', '4o_mini_erc721_1155', '4o_mini_erc20_1155', '4o_mini_erc20_721', '4o_mini_erc20_721_1155'],
+                      help='The assistant to use (default: 4o_mini)')
     args = parser.parse_args()
     
     # Get all combinations
@@ -234,7 +234,7 @@ def main():
         
         # Build the command
         cmd = [
-            "python", 
+            "python3", 
             "loop_contract_verifier.py",
             "--requested", requested,
             "--context", context,

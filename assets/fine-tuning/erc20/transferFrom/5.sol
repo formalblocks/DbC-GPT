@@ -1,0 +1,4 @@
+/// @notice postcondition (_balances[_spender] == __verifier_old_uint(_balances[_spender]) || ( __verifier_old_uint(_balances[_spender] ==  _balances[_spender] ) - _valueAmount && _spender != _beneficiary ) && _spender == _beneficiary)
+/// @notice postcondition ( _balances[_beneficiary] == __verifier_old_uint(_balances[_beneficiary]) + _valueAmount && _spender != _beneficiary ) || (_balances[_beneficiary] == __verifier_old_uint(_balances[_beneficiary]) && _spender == _beneficiary)
+/// @notice postcondition __verifier_old_uint(_allowed[_spender][msg.sender]) - _valueAmount == _allowed[_spender][msg.sender] 
+function transferFrom(address _spender, address _beneficiary, uint256 _valueAmount) public returns (bool s)

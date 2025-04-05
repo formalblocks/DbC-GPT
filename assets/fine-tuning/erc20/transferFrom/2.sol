@@ -1,0 +1,4 @@
+/// @notice postcondition (_balances[_sender] == __verifier_old_uint(_balances[_sender]) || ( __verifier_old_uint(_balances[_sender] ==  _balances[_sender] ) - _value && _sender != _recipient ) && _sender == _recipient)
+/// @notice postcondition ( _balances[_recipient] == __verifier_old_uint(_balances[_recipient]) + _value && _sender != _recipient ) || (_balances[_recipient] == __verifier_old_uint(_balances[_recipient]) && _sender == _recipient)
+/// @notice postcondition __verifier_old_uint(_allowed[_sender][msg.sender]) - _value == _allowed[_sender][msg.sender] 
+function transferFrom(address _sender, address _recipient, uint256 _value) public returns (bool success);
