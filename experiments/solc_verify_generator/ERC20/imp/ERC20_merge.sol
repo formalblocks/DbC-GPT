@@ -4,7 +4,7 @@
 pragma solidity >=0.5.7;
 
 import "./IERC20.sol";
-// Edited by Pedro to fix path for our repository
+// Updated path to local template directory
 import "./math/SafeMath.sol";
 
 /**
@@ -65,8 +65,8 @@ contract ERC20 is IERC20 {
      * @param _to The address _to transfer _to.
      * @param _value The amount _to be transferred.
      */
-    ///@notice postcondition ( _balances[msg.sender] == __verifier_old_uint(_balances[msg.sender]) - _value && msg.sender != _to ) || (_balances[msg.sender] == __verifier_old_uint(_balances[msg.sender]) && msg.sender == _to) && success
-/// @notice postcondition ( _balances[_to] == __verifier_old_uint(_balances[_to]) + _value && msg.sender != _to ) || (_balances[_to] == __verifier_old_uint(_balances[_to]) && msg.sender == _to) && success
+    ///@notice postcondition ( ( _balances[msg.sender] ==  __verifier_old_uint (_balances[msg.sender] ) - _value  && msg.sender  != _to ) || ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender]) && msg.sender  == _to ) &&  success ) || !success
+/// @notice postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  && msg.sender  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) && msg.sender  == _to ) ) || !success
 
     function transfer(address _to, uint256 _value)  public returns (bool success) {
         _transfer(msg.sender, _to, _value);
@@ -82,7 +82,7 @@ contract ERC20 is IERC20 {
      * @param spender The address which will spend the funds.
      * @param _value The amount of tokens to be spent.
      */
-    ///@notice postcondition _allowed[msg.sender][_spender] == _value && success || _allowed[msg.sender][_spender] == __verifier_old_uint(_allowed[msg.sender][_spender]) && !success
+    ///@notice postcondition (_allowed[msg.sender ][ _spender] ==  _value  &&  success) || ( _allowed[msg.sender ][ _spender] ==  __verifier_old_uint ( _allowed[msg.sender ][ _spender] ) && !success )    
 
     function approve(address _spender, uint256 _value)  public returns (bool success) {
         _approve(msg.sender, _spender, _value);
@@ -97,10 +97,10 @@ contract ERC20 is IERC20 {
      * @param to address The address which you want to transfer to
      * @param value uint256 the amount of tokens to be transferred
      */
-    ///@notice postcondition ( _balances[_from] == __verifier_old_uint(_balances[_from]) - _value && _from != _to ) || (_balances[_from] == __verifier_old_uint(_balances[_from]) && _from == _to) && success
-/// @notice postcondition ( _balances[_to] == __verifier_old_uint(_balances[_to]) + _value && _from != _to ) || (_balances[_to] == __verifier_old_uint(_balances[_to]) && _from == _to) && success
-/// @notice postcondition _allowed[_from][msg.sender] == __verifier_old_uint(_allowed[_from][msg.sender]) - _value && success
-/// @notice postcondition _allowed[_from][msg.sender] <= __verifier_old_uint(_allowed[_from][msg.sender]) || _from == msg.sender
+    ///@notice postcondition ( ( _balances[_from] ==  __verifier_old_uint (_balances[_from] ) - _value  &&  _from  != _to ) || ( _balances[_from] ==  __verifier_old_uint (_balances[_from] ) &&  _from == _to ) && success ) || !success 
+/// @notice postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  &&  _from  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) &&  _from  == _to ) && success ) || ! success
+/// @notice postcondition ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender] ) - _value && success) || ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender]) && !success) ||  _from  == msg.sender
+/// @notice postcondition  _allowed[_from ][msg.sender]  <= __verifier_old_uint (_allowed[_from ][msg.sender] ) ||  _from  == msg.sender
 
     function transferFrom(address _from, address _to, uint256 _value)  public returns (bool success) {
         _transfer(_from, _to, _value);

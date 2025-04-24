@@ -1,0 +1,107 @@
+run,time_taken,iterations,verified,annotated_contract,status
+1,235.2645652294159,10,False,,[]
+2,239.03284740447998,10,False,,"[""Interaction: 2\nContext::[implicit_constructor]: OK\nERC1155::[constructor]: OK\nERC1155::uri: OK\nERC1155::balanceOf: OK\nERC1155::balanceOfBatch: ERROR\n - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:95:5: Postcondition 'forall (uint i) _balances[_ids[i]][_owners[i]] == batchBalances[i]' might not hold at end of function.\nERC1155::setApprovalForAll: OK\nERC1155::isApprovedForAll: OK\nERC1155::safeTransferFrom: OK\nERC1155::safeBatchTransferFrom: ERROR\n - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:182:5: Postcondition 'forall (uint i) _from != _to ?  (_balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i] && _balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i]) : (_balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]))' might not hold at end of function.\nERC1155::[receive_ether_selfdestruct]: OK\nERC165::supportsInterface: OK\nERC165::[implicit_constructor]: OK\nIERC1155::[implicit_constructor]: OK\nIERC1155MetadataURI::[implicit_constructor]: OK\nIERC1155Receiver::[implicit_constructor]: OK\nIERC165::[implicit_constructor]: OK\nUse --show-warnings to see 20 warnings.\nErrors were found by the verifier.\n\n""]"
+3,304.90015149116516,10,False,,"[""Interaction: 4\nContext::[implicit_constructor]: OK\nERC1155::[constructor]: OK\nERC1155::uri: OK\nERC1155::balanceOf: OK\nERC1155::balanceOfBatch: ERROR\n - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:95:5: Postcondition 'forall (uint i) (_balances[_ids[i]][_owners[i]] == batchBalances[i])' might not hold at end of function.\nERC1155::setApprovalForAll: OK\nERC1155::isApprovedForAll: OK\nERC1155::safeTransferFrom: OK\nERC1155::safeBatchTransferFrom: ERROR\n - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:178:5: Postcondition 'forall (uint i) (_balances[_ids[i]][_from] >= _values[i])' might not hold at end of function.\n - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:178:5: Postcondition 'forall (uint i) ((_from == _to && _balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from])) || (_from != _to && _balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i] && _balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i]))' might not hold at end of function.\nERC1155::[receive_ether_selfdestruct]: OK\nERC165::supportsInterface: OK\nERC165::[implicit_constructor]: OK\nIERC1155::[implicit_constructor]: OK\nIERC1155MetadataURI::[implicit_constructor]: OK\nIERC1155Receiver::[implicit_constructor]: OK\nIERC165::[implicit_constructor]: OK\nUse --show-warnings to see 20 warnings.\nErrors were found by the verifier.\n\n"", ""Interaction: 5\nContext::[implicit_constructor]: OK\nERC1155::[constructor]: OK\nERC1155::uri: OK\nERC1155::balanceOf: OK\nERC1155::balanceOfBatch: ERROR\n - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:95:5: Postcondition 'forall (uint i) (i < _owners.length && _balances[_ids[i]][_owners[i]] == batchBalances[i])' might not hold at end of function.\nERC1155::setApprovalForAll: OK\nERC1155::isApprovedForAll: OK\nERC1155::safeTransferFrom: OK\nERC1155::safeBatchTransferFrom: ERROR\n - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:178:5: Postcondition 'forall (uint i) (i < _ids.length && _balances[_ids[i]][_from] >= _values[i])' might not hold at end of function.\n - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:178:5: Postcondition 'forall (uint i) (i < _ids.length && (_from == _to && _balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) || (_from != _to && _balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i] && _balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i])))' might not hold at end of function.\nERC1155::[receive_ether_selfdestruct]: OK\nERC165::supportsInterface: OK\nERC165::[implicit_constructor]: OK\nIERC1155::[implicit_constructor]: OK\nIERC1155MetadataURI::[implicit_constructor]: OK\nIERC1155Receiver::[implicit_constructor]: OK\nIERC165::[implicit_constructor]: OK\nUse --show-warnings to see 20 warnings.\nErrors were found by the verifier.\n\n""]"
+4,250.39066863059998,10,False,,[]
+5,109.53799867630005,3,True,"pragma solidity >= 0.5.0;
+
+contract ERC1155 {
+
+    event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
+    event TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values);
+    event ApprovalForAll(address indexed account, address indexed operator, bool approved);
+    event URI(string value, uint256 indexed id);
+
+    // Mapping from token ID to account balances
+    mapping (uint256 => mapping(address => uint256)) private _balances;
+
+    // Mapping from account to operator approvals
+    mapping (address => mapping(address => bool)) private _operatorApprovals;
+
+    // Used as the URI for all token types by relying on ID substitution, e.g. https://token-cdn-domain/{id}.json
+    string private _uri;
+
+    /**
+        @notice Get the balance of an account's tokens.
+        @param _owner  The address of the token holder
+        @param _id     ID of the token
+        @return        The _owner's balance of the token type requested
+    */
+    /// @notice postcondition balance == _balances[_id][_owner]
+    function balanceOf(address _owner, uint256 _id) public view returns (uint256 balance);
+
+    /**
+        @notice Get the balance of multiple account/token pairs
+        @param _owners The addresses of the token holders
+        @param _ids    ID of the tokens
+        @return        The _owner's balance of the token types requested (i.e. balance for each (owner, id) pair)
+    */
+    /// @notice postcondition batchBalances.length == _owners.length && batchBalances.length == _ids.length
+    /// @notice postcondition forall (uint i) !(i >= 0 && i < batchBalances.length) || batchBalances[i] == _balances[_ids[i]][_owners[i]]
+    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) public view returns (uint256[] memory batchBalances);
+
+    /**
+        @notice Enable or disable approval for a third party (""operator"") to manage all of the caller's tokens.
+        @dev MUST emit the ApprovalForAll event on success.
+        @param _operator  Address to add to the set of authorized operators
+        @param _approved  True if the operator is approved, false to revoke approval
+    */
+    /// @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+    function setApprovalForAll(address _operator, bool _approved) public;
+
+    /**
+        @notice Queries the approval status of an operator for a given owner.
+        @param _owner     The owner of the tokens
+        @param _operator  Address of authorized operator
+        @return           True if the operator is approved, false if not
+    */
+    /// @notice postcondition approved == _operatorApprovals[_owner][_operator]
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved);
+
+    /**
+        @notice Transfers `_value` amount of an `_id` from the `_from` address to the `_to` address specified (with safety call).
+        @dev Caller must be approved to manage the tokens being transferred out of the `_from` account (see ""Approval"" section of the standard).
+        MUST revert if `_to` is the zero address.
+        MUST revert if balance of holder for token `_id` is lower than the `_value` sent.
+        MUST revert on any other error.
+        MUST emit the `TransferSingle` event to reflect the balance change (see ""Safe Transfer Rules"" section of the standard).
+        After the above conditions are met, this function MUST check if `_to` is a smart contract (e.g. code size > 0). If so, it MUST call `onERC1155Received` on `_to` and act appropriately (see ""Safe Transfer Rules"" section of the standard).
+        @param _from    Source address
+        @param _to      Target address
+        @param _id      ID of the token type
+        @param _value   Transfer amount
+        @param _data    Additional data with no specified format, MUST be sent unaltered in call to `onERC1155Received` on `_to`
+    */
+    /// @notice postcondition (_from == _to || _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - _value)
+    /// @notice postcondition (_from == _to || _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value)
+    /// @notice postcondition _to != address(0)
+    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
+
+    /**
+        @notice Transfers `_values` amount(s) of `_ids` from the `_from` address to the `_to` address specified (with safety call).
+        @dev Caller must be approved to manage the tokens being transferred out of the `_from` account (see ""Approval"" section of the standard).
+        MUST revert if `_to` is the zero address.
+        MUST revert if length of `_ids` is not the same as length of `_values`.
+        MUST revert if any of the balance(s) of the holder(s) for token(s) in `_ids` is lower than the respective amount(s) in `_values` sent to the recipient.
+        MUST revert on any other error.
+        MUST emit `TransferSingle` or `TransferBatch` event(s) such that all the balance changes are reflected (see ""Safe Transfer Rules"" section of the standard).
+        Balance changes and events MUST follow the ordering of the arrays (_ids[0]/_values[0] before _ids[1]/_values[1], etc).
+        After the above conditions for the transfer(s) in the batch are met, this function MUST check if `_to` is a smart contract (e.g. code size > 0). If so, it MUST call the relevant `ERC1155TokenReceiver` hook(s) on `_to` and act appropriately (see ""Safe Transfer Rules"" section of the standard).
+        @param _from    Source address
+        @param _to      Target address
+        @param _ids     IDs of each token type (order and length must match _values array)
+        @param _values  Transfer amounts per token type (order and length must match _ids array)
+        @param _data    Additional data with no specified format, MUST be sent unaltered in call to the `ERC1155TokenReceiver` hook(s) on `_to`
+    */
+    /// @notice postcondition _ids.length == _values.length
+    /// @notice postcondition _to != address(0)
+    /// @notice postcondition forall (uint i) !(i >= 0 && i < _ids.length) || (_from == _to || _balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i])
+    /// @notice postcondition forall (uint i) !(i >= 0 && i < _ids.length) || (_from == _to || _balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i])
+    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data) public;
+}
+",[]
+6,249.5658619403839,10,False,,[]
+7,278.05393385887146,10,False,,[]
+8,244.17190074920654,10,False,,[]
+9,240.75281500816345,10,False,,[]
+10,212.92243790626526,10,False,,[]

@@ -1,0 +1,3174 @@
+Thread ID: thread_gYzMYmtCiNZSBRVyypzlCfIu
+Request Type: erc721
+Context: erc20_erc1155
+Run: 9
+
+=== USER [2025-04-16 16:20:38] ===
+
+    
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+    
+    ```solidity
+    pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+    ```
+    
+Here are examples of similar ERC formal specifications:
+Example ERC ERC20 specification:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.5.7;
+
+contract ERC20 {
+
+    mapping (address => uint) _balances;
+    mapping (address => mapping (address => uint)) _allowed;
+    uint public _totalSupply;
+
+    event Transfer(address indexed _from, address indexed _to, uint _value);
+    event Approval(address indexed _owner, address indexed _spender, uint _value);
+
+    /// @notice postcondition supply == _totalSupply
+    function totalSupply() public view returns (uint256 supply);
+
+    /// @notice  postcondition ( ( _balances[msg.sender] ==  __verifier_old_uint (_balances[msg.sender] ) - _value  && msg.sender  != _to ) ||   ( _balances[msg.sender] ==  __verifier_old_uint ( _balances[msg.sender]) && msg.sender  == _to ) &&  success )   || !success
+    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  && msg.sender  != _to ) ||   ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) && msg.sender  == _to )  )   || !success
+    function transfer(address _to, uint256 _value) public returns (bool success);
+
+    /// @notice  postcondition ( ( _balances[_from] ==  __verifier_old_uint (_balances[_from] ) - _value  &&  _from  != _to ) || ( _balances[_from] ==  __verifier_old_uint ( _balances[_from] ) &&  _from == _to ) && success ) || !success 
+    /// @notice  postcondition ( ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) + _value  &&  _from  != _to ) || ( _balances[_to] ==  __verifier_old_uint ( _balances[_to] ) &&  _from  == _to ) && success ) || !success 
+    /// @notice  postcondition ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender] ) - _value && success) || ( _allowed[_from ][msg.sender] ==  __verifier_old_uint (_allowed[_from ][msg.sender]) && !success) ||  _from  == msg.sender
+    /// @notice  postcondition  _allowed[_from ][msg.sender]  <= __verifier_old_uint (_allowed[_from ][msg.sender] ) ||  _from  == msg.sender
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
+
+    /// @notice  postcondition (_allowed[msg.sender ][ _spender] ==  _value  &&  success) || ( _allowed[msg.sender ][ _spender] ==  __verifier_old_uint ( _allowed[msg.sender ][ _spender] ) && !success )    
+    function approve(address _spender, uint256 _value) public returns (bool success);
+
+    /// @notice postcondition _balances[_owner] == balance
+    function balanceOf(address _owner) public view returns (uint256 balance);
+
+    /// @notice postcondition _allowed[_owner][_spender] == remaining
+    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
+}
+
+```
+
+Example ERC ERC1155 specification:
+
+```solidity
+// SPDX-License-Identifier: MIT
+
+pragma solidity >= 0.5.0;
+
+contract ERC1155  {
+    /// @notice postcondition _balances[_id][_owner] == balance  
+    function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance);
+    
+    /// @notice postcondition batchBalances.length == _owners.length 
+    /// @notice postcondition batchBalances.length == _ids.length
+    /// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
+    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) public view returns (uint256[] memory batchBalances);
+
+    /// @notice  postcondition _operatorApprovals[msg.sender][_operator] ==  _approved 
+    function setApprovalForAll(address _operator, bool _approved) public;
+
+    /// @notice postcondition _operatorApprovals[_owner][_operator] == approved
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved);
+
+    /// @notice postcondition _to != address(0) 
+    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+    /// @notice postcondition __verifier_old_uint ( _balances[_id][_from] ) >= _value    
+    /// @notice postcondition _balances[_id][_from] == __verifier_old_uint ( _balances[_id][_from] ) - _value
+    /// @notice postcondition _balances[_id][_to] == __verifier_old_uint ( _balances[_id][_to] ) + _value
+    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
+
+    ///@notice postcondition forall (uint i) !(0 <= i && i < _ids.length && _from != _to) || (_balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i])
+    ///@notice postcondition forall (uint i) !(0 <= i && i < _ids.length && _from != _to) || (_balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i])
+    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data) public;
+}
+
+```
+
+EIP ERC721 markdown below:
+
+<eip>
+pragma solidity ^0.4.20;
+
+/// @title ERC-721 Non-Fungible Token Standard
+/// @dev See https://eips.ethereum.org/EIPS/eip-721
+///  Note: the ERC-165 identifier for this interface is 0x80ac58cd.
+interface ERC721 /* is ERC165 */ {
+    /// @dev This emits when ownership of any NFT changes by any mechanism.
+    ///  This event emits when NFTs are created (`from` == 0) and destroyed
+    ///  (`to` == 0). Exception: during contract creation, any number of NFTs
+    ///  may be created and assigned without emitting Transfer. At the time of
+    ///  any transfer, the approved address for that NFT (if any) is reset to none.
+    event Transfer(address indexed _from, address indexed _to, uint256 indexed _tokenId);
+
+    /// @dev This emits when the approved address for an NFT is changed or
+    ///  reaffirmed. The zero address indicates there is no approved address.
+    ///  When a Transfer event emits, this also indicates that the approved
+    ///  address for that NFT (if any) is reset to none.
+    event Approval(address indexed _owner, address indexed _approved, uint256 indexed _tokenId);
+
+    /// @dev This emits when an operator is enabled or disabled for an owner.
+    ///  The operator can manage all NFTs of the owner.
+    event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
+
+    /// @notice Count all NFTs assigned to an owner
+    /// @dev NFTs assigned to the zero address are considered invalid, and this
+    ///  function throws for queries about the zero address.
+    /// @param _owner An address for whom to query the balance
+    /// @return The number of NFTs owned by `_owner`, possibly zero
+    function balanceOf(address _owner) external view returns (uint256);
+
+    /// @notice Find the owner of an NFT
+    /// @dev NFTs assigned to zero address are considered invalid, and queries
+    ///  about them do throw.
+    /// @param _tokenId The identifier for an NFT
+    /// @return The address of the owner of the NFT
+    function ownerOf(uint256 _tokenId) external view returns (address);
+
+    /// @notice Transfers the ownership of an NFT from one address to another address
+    /// @dev Throws unless `msg.sender` is the current owner, an authorized
+    ///  operator, or the approved address for this NFT. Throws if `_from` is
+    ///  not the current owner. Throws if `_to` is the zero address. Throws if
+    ///  `_tokenId` is not a valid NFT. When transfer is complete, this function
+    ///  checks if `_to` is a smart contract (code size > 0). If so, it calls
+    ///  `onERC721Received` on `_to` and throws if the return value is not
+    ///  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    /// @param data Additional data with no specified format, sent in call to `_to`
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) external payable;
+
+    /// @notice Transfers the ownership of an NFT from one address to another address
+    /// @dev This works identically to the other function with an extra data parameter,
+    ///  except this function just sets data to "".
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external payable;
+
+    /// @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+    ///  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+    ///  THEY MAY BE PERMANENTLY LOST
+    /// @dev Throws unless `msg.sender` is the current owner, an authorized
+    ///  operator, or the approved address for this NFT. Throws if `_from` is
+    ///  not the current owner. Throws if `_to` is the zero address. Throws if
+    ///  `_tokenId` is not a valid NFT.
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    function transferFrom(address _from, address _to, uint256 _tokenId) external payable;
+
+    /// @notice Change or reaffirm the approved address for an NFT
+    /// @dev The zero address indicates there is no approved address.
+    ///  Throws unless `msg.sender` is the current NFT owner, or an authorized
+    ///  operator of the current owner.
+    /// @param _approved The new approved NFT controller
+    /// @param _tokenId The NFT to approve
+    function approve(address _approved, uint256 _tokenId) external payable;
+
+    /// @notice Enable or disable approval for a third party ("operator") to manage
+    ///  all of `msg.sender`'s assets
+    /// @dev Emits the ApprovalForAll event. The contract MUST allow
+    ///  multiple operators per owner.
+    /// @param _operator Address to add to the set of authorized operators
+    /// @param _approved True if the operator is approved, false to revoke approval
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /// @notice Get the approved address for a single NFT
+    /// @dev Throws if `_tokenId` is not a valid NFT.
+    /// @param _tokenId The NFT to find the approved address for
+    /// @return The approved address for this NFT, or the zero address if there is none
+    function getApproved(uint256 _tokenId) external view returns (address);
+
+    /// @notice Query if an address is an authorized operator for another address
+    /// @param _owner The address that owns the NFTs
+    /// @param _operator The address that acts on behalf of the owner
+    /// @return True if `_operator` is an approved operator for `_owner`, false otherwise
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+}
+
+interface ERC165 {
+    /// @notice Query if a contract implements an interface
+    /// @param interfaceID The interface identifier, as specified in ERC-165
+    /// @dev Interface identification is specified in ERC-165. This function
+    ///  uses less than 30,000 gas.
+    /// @return `true` if the contract implements `interfaceID` and
+    ///  `interfaceID` is not 0xffffffff, `false` otherwise
+    function supportsInterface(bytes4 interfaceID) external view returns (bool);
+}
+
+</eip>
+
+
+=== ASSISTANT [2025-04-16 16:20:42] ===
+Certainly! Let's add formal postcondition annotations for various functions in the `IERC721` contract interface. These postconditions will describe the behavior consistent with the ERC-721 standard.
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == _approved
+        * @notice postcondition msg.sender == __verifier_old_uint(_tokenOwner[_tokenId])
+        */
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice postcondition _operatorApprovals[_owner][_operator] == isApprovedForAll
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 && _from != _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) && _from == _to)
+        * @notice postcondition (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 && _from != _to) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) && _from == _to)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 && _from != _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) && _from == _to)
+        * @notice postcondition (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 && _from != _to) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) && _from == _to)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 && _from != _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) && _from == _to)
+        * @notice postcondition (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 && _from != _to) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) && _from == _to)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+```
+
+### Explanation:
+1. **Ownership Functions**: 
+   - For `balanceOf`, we ensure that the balance returned corresponds to the internal `_ownedTokensCount` mapping.
+   - For `ownerOf`, it reflects the correct `_tokenOwner` of the given NFT.
+
+2. **Approval Functions**:
+   - `approve` ensures that the approved address for a token is correctly set in `_tokenApprovals` and `msg.sender` is the current owner.
+   - `getApproved` should confirm the approved address for a token ID.
+
+3. **Operator Functions**:
+   - `setApprovalForAll` modifies the `_operatorApprovals` mapping to reflect the new approval status.
+   - `isApprovedForAll` checks if an operator is authorized for a certain owner.
+
+4. **Transfer Functions**:
+   - Both `transferFrom` and `safeTransferFrom` ensure that the token ownership is correctly transferred from `_from` to `_to` and adjust `_ownedTokensCount` accordingly.
+   - They reset `_tokenApprovals[_tokenId]` to zero upon transfer, respecting the ERC-721 conditions.
+
+These annotations aim to reflect the accurate expected behavior according to the ERC-721 interface specification.
+
+=== USER [2025-04-16 16:21:24] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:35: solc-verify error: Invalid type for argument in function call. Invalid implicit conversion from address to uint256 requested.
+msg.sender == __verifier_old_uint(_tokenOwner[_tokenId])
+                                  ^-------------------^
+Annotation:1:1: solc-verify error: Operator == not compatible with types address payable and uint256
+msg.sender == __verifier_old_uint(_tokenOwner[_tokenId])
+^------------------------------------------------------^
+Annotation:1:1: solc-verify error: Operator == not compatible with types bool and function (address,address) view returns (bool)
+_operatorApprovals[_owner][_operator] == isApprovedForAll
+^-------------------------------------------------------^
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:59:5: solc-verify error: Error(s) while translating annotation for node
+    function approve(address _approved, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:86:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:21:29] ===
+Let’s proceed by correctly specifying formal postconditions using solc-verify for the `IERC721` contract. The postconditions need to reflect the intended behavior dictated by the ERC-721 standard. Specifically, we need to ensure that state transitions are accurately represented. Let's see the postconditions for each function:
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance) {
+        //$ Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner) {
+        //$ Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition (msg.sender == _tokenOwner[_tokenId] || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender]) || msg.sender == _tokenApprovals[_tokenId]
+        * @notice postcondition _tokenApprovals[_tokenId] == _approved
+        */
+    function approve(address _approved, uint256 _tokenId) external {
+        //$ Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved) {
+        //$ Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external {
+        //$ Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _operatorApprovals[_owner][_operator] == isApprovedForAll
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll) {
+        //$ Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (__verifier_old_uint(_ownedTokensCount[_from]) == _ownedTokensCount[_from] + 1) || (_from == _to)
+        * @notice postcondition (__verifier_old_uint(_ownedTokensCount[_to]) == _ownedTokensCount[_to] - 1) || (_from == _to)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external {
+        //$ Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (__verifier_old_uint(_ownedTokensCount[_from]) == _ownedTokensCount[_from] + 1) || (_from == _to)
+        * @notice postcondition (__verifier_old_uint(_ownedTokensCount[_to]) == _ownedTokensCount[_to] - 1) || (_from == _to)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external {
+        //$ Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (__verifier_old_uint(_ownedTokensCount[_from]) == _ownedTokensCount[_from] + 1) || (_from == _to)
+        * @notice postcondition (__verifier_old_uint(_ownedTokensCount[_to]) == _ownedTokensCount[_to] - 1) || (_from == _to)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external {
+        //$ Implementation is not provided here as it is an interface
+    }
+}
+```
+
+### Explanation:
+- **`balanceOf` and `ownerOf`:** These simply return state variables, linking return values to the internal mappings.
+- **`approve`:** We ensure the called function sets the approved address correctly. The caller must have proper clearance (either as the owner or as an authorized operator).
+- **`getApproved`:** Validates that the return matches the internal approvals mapping.
+- **`setApprovalForAll`:** Confirms the authorization status of an operator is effectively toggled.
+- **`isApprovedForAll`:** Links the return value directly to the state variable.
+- **`transferFrom` and `safeTransferFrom`:** Requires that ownership changes are reflected in `_tokenOwner` and `_ownedTokensCount`, resetting `_tokenApprovals` post-transfer.
+
+These postconditions ensure that state transitions and data consistency in the smart contract align with the ERC-721 specification. Correct application of postconditions ensures that the implementation respects specified behavior.
+
+=== USER [2025-04-16 16:21:55] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:1: solc-verify error: Operator == not compatible with types bool and function (address,address) view returns (bool)
+_operatorApprovals[_owner][_operator] == isApprovedForAll
+^-------------------------------------------------------^
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:86:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:21:58] ===
+To properly annotate the `IERC721` contract with formal verification conditions using `solc-verify`, we must ensure that each function's postconditions accurately represent the expected state transitions or invariants according to the ERC-721 standard. Let's address each function:
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance) {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner) {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition (msg.sender == _tokenOwner[_tokenId] || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender]) && (_tokenApprovals[_tokenId] == _approved)
+        */
+    function approve(address _approved, uint256 _tokenId) external {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved) {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _operatorApprovals[_owner][_operator] == __verifier_old_bool(_operatorApprovals[_owner][_operator])
+        * @notice postcondition isApprovedForAll == _operatorApprovals[_owner][_operator]
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll) {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external {
+        // Implementation is not provided here as it is an interface
+    }
+}
+```
+
+### Explanation:
+1. **Ownership and Approvals**:
+   - `balanceOf` verifies the balance equals the internal `_ownedTokensCount`.
+   - `ownerOf` confirms that the returned owner matches `_tokenOwner`.
+
+2. **Approvals**:
+   - `approve` updates the `_tokenApprovals` mapping only if the caller is authorized.
+   - `getApproved` ensures correct return of approved address.
+
+3. **Operator Functions**:
+   - `setApprovalForAll` reflects the new state of operator approval.
+   - `isApprovedForAll` maintains the correct relation between return value and mapping.
+
+4. **Transfers**:
+   - `transferFrom` and `safeTransferFrom` ensure token ownership is transferred, updating `_ownedTokensCount` and resetting approvals.
+   - Use logical implications `_from != _to` to impact counters only when sending to a new address, reflecting self-transfer logic.
+
+These annotations reflect the conditions post-execution, addressing potential state changes and expected behavior per ERC-721 rules.
+
+=== USER [2025-04-16 16:22:16] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:1: solc-verify error: Operator == not compatible with types function (address,address) view returns (bool) and bool
+isApprovedForAll == _operatorApprovals[_owner][_operator]
+^-------------------------------------------------------^
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:96:5: solc-verify error: Error while parsing annotation.
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:96:5: solc-verify error: Error while parsing annotation.
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:107:5: solc-verify error: Error while parsing annotation.
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:107:5: solc-verify error: Error while parsing annotation.
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:116:5: solc-verify error: Error while parsing annotation.
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:116:5: solc-verify error: Error while parsing annotation.
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:86:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:96:5: solc-verify error: Error(s) while translating annotation for node
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:96:5: solc-verify error: Error(s) while translating annotation for node
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:107:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:107:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:116:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:116:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:22:19] ===
+To annotate the `IERC721` contract interface with appropriate postconditions for formal verification using `solc-verify`, we need to follow the ERC-721 standard and ensure each function's expected states are captured correctly. Let's revise the annotations with attention to detail and provide a fixed set of postconditions for each function:
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        * @notice postcondition _owner != address(0)
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance) {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        * @notice postcondition _owner != address(0)
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner) {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition (msg.sender == _tokenOwner[_tokenId] ||  _operatorApprovals[_tokenOwner[_tokenId]][msg.sender])
+        * @notice postcondition _tokenApprovals[_tokenId] == _approved
+        */
+    function approve(address _approved, uint256 _tokenId) external {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved) {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _operatorApprovals[_owner][_operator] == isApproved
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApproved) {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 || _from == _to
+        * @notice postcondition _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 || _from == _to
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 || _from == _to
+        * @notice postcondition _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 || _from == _to
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external {
+        // Implementation is not provided here as it is an interface
+    }
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1 || _from == _to
+        * @notice postcondition _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1 || _from == _to
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external {
+        // Implementation is not provided here as it is an interface
+    }
+}
+```
+
+### Explanation:
+1. **Ownership and Correct Address Checks**:
+   - **`balanceOf`** and **`ownerOf`** should assert that the owner address is not zero and correctly reflects the count and ownership mappings.
+   
+2. **Approval Functions**:
+   - For **`approve`**, ensure that the setting of an approved address is only permissible if the caller is the owner or an authorized operator.
+   - **`getApproved`** must return the correct approved address per the mapping.
+
+3. **Operator Functions**:
+   - **`setApprovalForAll`** updates the mapping for the operator's approved status.
+   - **`isApprovedForAll`** directly relates the approved status of a given operator to the stored mapping.
+
+4. **Transfer Functions**:
+   - Both **`transferFrom`** and **`safeTransferFrom`** functions assure that token ownership transitions (from `_from` to `_to`) are reflected in the mappings, the count is updated accordingly when necessary, and approvals are reset.
+   - Incorporating correct handling for self-transfers and ensuring no change in ownership count if `_from` equals `_to`.
+
+These postconditions provide validity over the expected states and changes, aligning with the ERC-721 standard while adhering to formal verification needs.
+
+=== USER [2025-04-16 16:22:37] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:42: solc-verify error: Undeclared identifier.
+_operatorApprovals[_owner][_operator] == isApproved
+                                         ^--------^
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:88:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:22:42] ===
+To add appropriate formal verification conditions (postconditions) for the `IERC721` contract functions using `solc-verify`, we must ensure the conditions adhere to the ERC-721 standard while aligning with the `solc-verify` verification guidelines. Let's annotate each function.
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        * @notice postcondition _owner != address(0)
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        * @notice postcondition _owner != address(0)
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice postcondition (_tokenOwner[_tokenId] == msg.sender || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender])
+        * @notice postcondition _tokenOwner[_tokenId] != address(0)
+        * @notice postcondition _tokenApprovals[_tokenId] == _approved
+        */
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice postcondition _operatorApprovals[_owner][_operator] == isApprovedForAll
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll);
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+```
+
+### Explanation:
+1. **`balanceOf` and `ownerOf`:**
+   - These functions confirm direct relations between the internal state (mappings) and the return values.
+   - They assert that zero addresses are invalid.
+
+2. **`approve`:**
+   - Ensures that the caller must be the owner or an approved operator and clarifies that the new approval reflects in `_tokenApprovals`.
+
+3. **`getApproved`:**
+   - Confirms simple access of evaluations to return the address stored in `_tokenApprovals`.
+
+4. **`setApprovalForAll`:**
+   - Reflects correctly setting or revoking operator approval.
+
+5. **`isApprovedForAll`:**
+   - Maps the returned boolean status to the storing mapping’s state.
+
+6. **Transfers:**
+   - Enforce address validity, ensure proper ownership transfer, and count adjustment only when `_from` and `_to` are different, while also resetting approvals.
+   - Ensure there are no changes in balances when transferring to and from the same address (`_from == _to`).
+
+These postconditions help describe and enforce the expected behavior of each function defined in the ERC-721 standard within the `IERC721` interface, promoting reliable formal verification processes.
+
+=== USER [2025-04-16 16:23:02] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:1: solc-verify error: Operator == not compatible with types bool and function (address,address) view returns (bool)
+_operatorApprovals[_owner][_operator] == isApprovedForAll
+^-------------------------------------------------------^
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:89:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:23:07] ===
+To properly annotate the `IERC721` contract with formal verification conditions using `solc-verify`, we need to focus on ensuring that each postcondition correctly reflects the ERC-721 standard's expected state transitions or invariants. Here is the updated annotation:
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        * @notice postcondition _owner != address(0)
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        * @notice postcondition _owner != address(0)
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice postcondition (_tokenOwner[_tokenId] == msg.sender || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender])
+        * @notice postcondition _tokenOwner[_tokenId] != address(0)
+        * @notice postcondition _tokenApprovals[_tokenId] == _approved
+        */
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice postcondition _operatorApprovals[_owner][_operator] == isApprovedForAll
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll);
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+```
+
+### Explanation:
+1. **`balanceOf` and `ownerOf`:**
+   - Ensure the returned balance correctly reflects the mapping and owner can't be a zero address.
+
+2. **`approve`:**
+   - Makes sure that approval happens only if the caller is the owner or authorized operator, and the token exists.
+
+3. **`getApproved`:**
+   - Simple access of approval state.
+
+4. **`setApprovalForAll` and `isApprovedForAll`:**
+   - Sets and checks operator approval correctly.
+
+5. **Transfers (`transferFrom`, `safeTransferFrom` without or with data):**
+   - Validate non-zero target address.
+   - Handle self-transfer logic by ensuring no balance change when `_from` equals `_to`.
+   - Ensure proper update/reset of ownership and approval status.
+
+These postconditions aim to accurately follow the ERC-721 standard and assist in verifying the intended state changes in the contract with formal methods.
+
+=== USER [2025-04-16 16:23:46] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:1: solc-verify error: Operator == not compatible with types bool and function (address,address) view returns (bool)
+_operatorApprovals[_owner][_operator] == isApprovedForAll
+^-------------------------------------------------------^
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:89:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:23:49] ===
+To annotate the `IERC721` contract interface with proper formal verification conditions (postconditions), we will apply the ERC-721 standard principles while ensuring formal correctness with `solc-verify`. Here, I'll provide postconditions that reflect the contract's state after executing each function, ensuring they align with the ERC standard.
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        * @notice postcondition _owner != address(0)
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        * @notice postcondition _owner != address(0)
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice postcondition (_tokenOwner[_tokenId] == msg.sender || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender])
+        * @notice postcondition _tokenOwner[_tokenId] != address(0)
+        * @notice postcondition _tokenApprovals[_tokenId] == _approved
+        */
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        * @notice postcondition _tokenOwner[_tokenId] != address(0)
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice postcondition _operatorApprovals[_owner][_operator] == isApprovedForAll
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll);
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition !success || (_tokenOwner[_tokenId] == _from)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition !success || (_tokenOwner[_tokenId] == _from)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition !success || (_tokenOwner[_tokenId] == _from)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+```
+
+### Explanation:
+
+1. **View Functions (`balanceOf`, `ownerOf`, `getApproved`, and `isApprovedForAll`):**
+   - Ensure the state is queried correctly, reflecting the internal mappings of the contract with conditions preventing invalid states involving a zero address owner.
+   - Use postconditions that match each function's purpose, ensuring they return values directly correlating with state variables.
+
+2. **Mutative Functions (`approve`, `setApprovalForAll`, and transfer functions):**
+   - Capture the state changes regarding approvals or token ownership transfers.
+   - For `approve`, ensure the caller is allowed to approve the token.
+   - For transfers (`transferFrom`, `safeTransferFrom`), ensure the ownership transfer is reflected correctly unless the transfer fails.
+   - Handle self-transfers where applicable and reset the `_tokenApprovals` mapping.
+   - Include `!success || (_tokenOwner[_tokenId] == _from)` to capture failure cases with the success logic.
+
+These postconditions ensure proper representation of the intended behavior of ERC-721 functions, handling consistent and specified state transitions after each contract interaction.
+
+=== USER [2025-04-16 16:24:10] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:1: solc-verify error: Operator == not compatible with types bool and function (address,address) view returns (bool)
+_operatorApprovals[_owner][_operator] == isApprovedForAll
+^-------------------------------------------------------^
+Annotation:1:2: solc-verify error: Undeclared identifier.
+!success || (_tokenOwner[_tokenId] == _from)
+ ^-----^
+Annotation:1:2: solc-verify error: Undeclared identifier.
+!success || (_tokenOwner[_tokenId] == _from)
+ ^-----^
+Annotation:1:2: solc-verify error: Undeclared identifier.
+!success || (_tokenOwner[_tokenId] == _from)
+ ^-----^
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:90:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:102:5: solc-verify error: Error(s) while translating annotation for node
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:115:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:126:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:24:12] ===
+To properly annotate the `IERC721` contract with formal verification conditions using the `solc-verify` syntax, we will add postconditions that reflect the expected behavior as per the ERC-721 standard. These annotations will help ensure that the contract behaves correctly and efficiently.
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        * @notice postcondition _owner != address(0)
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        * @notice postcondition _owner != address(0)
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice postcondition (_tokenOwner[_tokenId] == msg.sender || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender])
+        * @notice postcondition _tokenOwner[_tokenId] != address(0)
+        * @notice postcondition _tokenApprovals[_tokenId] == _approved
+        */
+    function approve(address _approved, uint256 _tokenId) external;
+
+     /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        * @notice postcondition _tokenOwner[_tokenId] != address(0)
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice postcondition isApprovedForAll == _operatorApprovals[_owner][_operator]
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll);
+
+    /**
+        * @notice postcondition (_from == _to || _to != address(0))
+        * @notice postcondition success == (_tokenOwner[_tokenId] == _to)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external returns (bool success);
+
+    /**
+        * @notice postcondition (_from == _to || _to != address(0))
+        * @notice postcondition success == (_tokenOwner[_tokenId] == _to)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external returns (bool success);
+
+    /**
+        * @notice postcondition (_from == _to || _to != address(0))
+        * @notice postcondition success == (_tokenOwner[_tokenId] == _to)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition (_from == _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_to == _from) || (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external returns (bool success);
+}
+
+```
+
+### Explanation:
+1. **Balance and Ownership Queries:**
+   - The `balanceOf` and `ownerOf` functions make sure that the owner's balance or token owner is accurately reflected and valid (not zero).
+
+2. **Approval Functions:**
+   - `approve` ensures only valid and authorized approvals, setting the `_tokenApprovals` mapping.
+   - `getApproved` confirms the approved address mirrors `_tokenApprovals`.
+
+3. **Operator Approvals:**
+   - `setApprovalForAll` and `isApprovedForAll` correctly set and reflect the state of operator approvals.
+
+4. **Transfer Functions:**
+   - All transfer functions (`transferFrom` and `safeTransferFrom`) confirm token ownership changes with proper recipient validation.
+   - Handle self-transfers, ensuring no count changes when `_from` equals `_to`.
+   - Reset `_tokenApprovals` and verify successful transfers update the corresponding owner mapping.
+
+These conditions reflect the contract's expected compliance with the ERC-721 standard, offering both state validation and operational correctness.
+
+=== USER [2025-04-16 16:24:50] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:1: solc-verify error: Operator == not compatible with types function (address,address) view returns (bool) and bool
+isApprovedForAll == _operatorApprovals[_owner][_operator]
+^-------------------------------------------------------^
+Annotation:1:1: solc-verify error: Undeclared identifier.
+success == (_tokenOwner[_tokenId] == _to)
+^-----^
+Annotation:1:1: solc-verify error: Undeclared identifier.
+success == (_tokenOwner[_tokenId] == _to)
+^-----^
+Annotation:1:1: solc-verify error: Undeclared identifier.
+success == (_tokenOwner[_tokenId] == _to)
+^-----^
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:90:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:101:5: solc-verify error: Error(s) while translating annotation for node
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:113:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:123:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:24:53] ===
+To correctly annotate the `IERC721` interface with formal verification postconditions using `solc-verify`, we'll adhere strictly to the ERC-721 standard while ensuring consistency and proper handling of expected state transitions. Here's a revised approach for the annotations:
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _owner != address(0)
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        * @notice postcondition _owner != address(0)
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice postcondition (_tokenOwner[_tokenId] == msg.sender || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender])
+        * @notice postcondition _tokenApprovals[_tokenId] == _approved
+        */
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice postcondition _operatorApprovals[_owner][_operator] == isApprovedForAll
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll);
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _to != address(0)
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+```
+
+### Explanation:
+1. **Balancing Conditions:**
+   - **`balanceOf`** ensures that the balance accurately reflects `_ownedTokensCount` and that the owner is not a zero address.
+   - **`ownerOf`** guarantees the owner of the token is not a zero address and ensures the owner field matches `_tokenOwner`.
+
+2. **Approvals:**
+   - **`approve`** requires the caller to own the token or be an authorized operator while setting `_tokenApprovals`.
+   - **`getApproved`** must return the approved address, which is in `_tokenApprovals`.
+
+3. **Operator Approvals:**
+   - **`setApprovalForAll`** reflects the change in operator approvals.
+   - **`isApprovedForAll`** returns if an operator is authorized for a certain owner.
+
+4. **Transfers:**
+   - **`transferFrom` and `safeTransferFrom`** include checks that `_to` is not the zero address, ownership changes occur correctly, approvals are reset, and ownership counts adjust if `_from` is not equal to `_to`.
+
+This approach adheres to the defined guidelines and ensures each function is annotated to reflect the correct behavior per ERC-721 standards.
+
+=== USER [2025-04-16 16:25:15] ===
+
+        
+    Task:
+        - You are given a smart contract interface and need to add formal verification conditions for each function.
+        - Read the ERC documentation to understand the contract's behavior.
+        - For each function, add postconditions by replacing "$ADD POSTCONDITION HERE" with one or more appropriate postconditions.
+        - Use the solc-verify syntax: /// @notice postcondition [condition]
+        
+    Requirements:
+        - Each function must have appropriate postconditions
+        - Conditions must correctly represent the expected behavior per the ERC standard
+        - Conditions for all functions must be consistent with each other
+        - Annotate with postconditions above each function
+        
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared in the contract (_balances, _allowed, _totalSupply)
+        - Use ONLY parameter names exactly as they appear in function signatures (_to, _from, _value, etc.)
+        - DO NOT create short variable names like 'bal', 't', 's', 'u', 'v', or 'rem'
+        - For referencing previous state values, use __verifier_old_uint(stateVariable)
+        - For functions that return success, handle both success and failure cases: (condition && success) || !success
+        - For self-transfers, add special handling when sender == recipient
+        - View functions should relate return values directly to state variables
+        - Ensure consistency between related functions (e.g., transfer and transferFrom)
+        
+    Your task is to annotate this contract with proper solc-verify postconditions:
+
+        
+        ```solidity
+            pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+
+    mapping (uint256 => address) private _tokenApprovals;
+
+    mapping (address => uint256) private _ownedTokensCount;
+
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice Count all NFTs assigned to an owner
+        * @dev NFTs assigned to the zero address are considered invalid, and this
+        *  function throws for queries about the zero address.
+        * @param _owner An address for whom to query the balance
+        * @return The number of NFTs owned by `_owner`, possibly zero
+        */
+    $ADD POSTCONDITION HERE
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice Find the owner of an NFT
+        * @dev NFTs assigned to zero address are considered invalid, and queries
+        *  about them do throw.
+        * @param _tokenId The identifier for an NFT
+        * @return The address of the owner of the NFT
+        */
+    $ADD POSTCONDITION HERE
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice Change or reaffirm the approved address for an NFT
+        * @dev The zero address indicates there is no approved address.
+        *  Throws unless `msg.sender` is the current NFT owner, or an authorized
+        *  operator of the current owner.
+        * @param _approved The new approved NFT controller
+        * @param _tokenId The NFT to approve
+        */
+    $ADD POSTCONDITION HERE
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice Get the approved address for a single NFT
+        * @dev Throws if `_tokenId` is not a valid NFT.
+        * @param _tokenId The NFT to find the approved address for
+        * @return The approved address for this NFT, or the zero address if there is none
+        */
+    $ADD POSTCONDITION HERE
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice Enable or disable approval for a third party ("operator") to manage
+        *  all of `msg.sender`'s assets
+        * @dev Emits the ApprovalForAll event. The contract MUST allow
+        *  multiple operators per owner.
+        * @param _operator Address to add to the set of authorized operators
+        * @param _approved True if the operator is approved, false to revoke approval
+        */
+    $ADD POSTCONDITION HERE
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice Query if an address is an authorized operator for another address
+        * @param _owner The address that owns the NFTs
+        * @param _operator The address that acts on behalf of the owner
+        * @return True if `_operator` is an approved operator for `_owner`, false otherwise
+        */
+    $ADD POSTCONDITION HERE
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+
+    /**
+        * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+        *  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+        *  THEY MAY BE PERMANENTLY LOST
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev This works identically to the other function with an extra data parameter,
+        *  except this function just sets data to "".
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice Transfers the ownership of an NFT from one address to another address
+        * @dev Throws unless `msg.sender` is the current owner, an authorized
+        *  operator, or the approved address for this NFT. Throws if `_from` is
+        *  not the current owner. Throws if `_to` is the zero address. Throws if
+        *  `_tokenId` is not a valid NFT. When transfer is complete, this function
+        *  checks if `_to` is a smart contract (code size > 0). If so, it calls
+        *  `onERC721Received` on `_to` and throws if the return value is not
+        *  `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+        * @param _from The current owner of the NFT
+        * @param _to The new owner
+        * @param _tokenId The NFT to transfer
+        * @param data Additional data with no specified format, sent in call to `_to`
+        */
+    $ADD POSTCONDITION HERE
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+        ```
+        Error while running compiler, details:
+Warning: This is a pre-release compiler version, please do not use it in production.
+./solc_verify_generator/ERC721/imp/Address.sol:14:25: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+    function isContract(address account) internal view returns (bool) {
+                        ^-------------^
+./solc_verify_generator/ERC721/imp/Address.sol:15:9: Warning: Unused local variable.
+        uint256 size;
+        ^----------^
+./solc_verify_generator/ERC721/imp/Address.sol:14:5: Warning: Function state mutability can be restricted to pure
+    function isContract(address account) internal view returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= Converting to Boogie IVL =======
+
+======= ./solc_verify_generator/ERC721/imp/Address.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/ERC721_merge.sol =======
+Annotation:1:1: solc-verify error: Operator == not compatible with types bool and function (address,address) view returns (bool)
+_operatorApprovals[_owner][_operator] == isApprovedForAll
+^-------------------------------------------------------^
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:99:5: solc-verify error: Error while parsing annotation.
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:99:5: solc-verify error: Error while parsing annotation.
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:111:5: solc-verify error: Error while parsing annotation.
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:111:5: solc-verify error: Error while parsing annotation.
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:121:5: solc-verify error: Error while parsing annotation.
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Annotation:1:18: solc-verify error: Expected primary expression.
+(_from != _to) ==> (_ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+                 ^
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:121:5: solc-verify error: Error while parsing annotation.
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+======= ./solc_verify_generator/ERC721/imp/IERC165.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/IERC721Receiver.sol =======
+
+======= ./solc_verify_generator/ERC721/imp/SafeMath.sol =======
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:88:5: solc-verify error: Error(s) while translating annotation for node
+    function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:99:5: solc-verify error: Error(s) while translating annotation for node
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:99:5: solc-verify error: Error(s) while translating annotation for node
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:111:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:111:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:121:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+./solc_verify_generator/ERC721/imp/ERC721_merge.sol:121:5: solc-verify error: Error(s) while translating annotation for node
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+=== ASSISTANT [2025-04-16 16:25:18] ===
+To annotate the `IERC721` interface with formal verification conditions using the `solc-verify` syntax, let's provide contextually accurate postconditions that reflect the expected behavior per the ERC-721 standard. Here's a refined version:
+
+```solidity
+pragma solidity >=0.5.0;
+
+contract IERC721 {
+
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+    mapping (uint256 => address) private _tokenOwner;
+    mapping (uint256 => address) private _tokenApprovals;
+    mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+    /**
+        * @notice postcondition _owner != address(0)
+        * @notice postcondition _ownedTokensCount[_owner] == balance
+        */
+    function balanceOf(address _owner) external view returns (uint256 balance);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _owner
+        * @notice postcondition _owner != address(0)
+        */
+    function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    /**
+        * @notice postcondition (_tokenOwner[_tokenId] == msg.sender || _operatorApprovals[_tokenOwner[_tokenId]][msg.sender]) && _tokenApprovals[_tokenId] == _approved
+        */
+    function approve(address _approved, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenApprovals[_tokenId] == approved
+        * @notice postcondition _tokenOwner[_tokenId] != address(0)
+        */
+    function getApproved(uint256 _tokenId) external view returns (address approved);
+
+    /**
+        * @notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+        */
+    function setApprovalForAll(address _operator, bool _approved) external;
+
+    /**
+        * @notice postcondition isApprovedForAll == _operatorApprovals[_owner][_operator]
+        */
+    function isApprovedForAll(address _owner, address _operator) external view returns (bool isApprovedForAll);
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_to != address(0)) && (_from == _to || _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from == _to || _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition (_from != _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]))
+        */
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_to != address(0)) && (_from == _to || _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from == _to || _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition (_from != _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]))
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+
+    /**
+        * @notice postcondition _tokenOwner[_tokenId] == _to
+        * @notice postcondition (_to != address(0)) && (_from == _to || _ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]) - 1)
+        * @notice postcondition (_from == _to || _ownedTokensCount[_to] == __verifier_old_uint(_ownedTokensCount[_to]) + 1)
+        * @notice postcondition _tokenApprovals[_tokenId] == address(0)
+        * @notice postcondition (_from != _to) || (_ownedTokensCount[_from] == __verifier_old_uint(_ownedTokensCount[_from]))
+        */
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
+}
+
+```
+
+### Notes:
+
+1. **Postconditions for `balanceOf` and `ownerOf`:**
+   - Ensure non-zero addresses and accurate reflection of mappings.
+
+2. **Postconditions for Approval and Transfer:**
+   - Ensure correct state after operations.
+   - `approve` ensures the approver has proper authorization.
+   - All transfers confirm ownership changes, manage balance updates, restrict to valid (`_to != address(0)`) non-self-transfers.
+   - Self-transfers (`_from == _to`) do not change counts but reset `_tokenApprovals` correctly.
+
+3. **Postconditions for Operator Approvals:**
+   - Ensure `setApprovalForAll` changes `_operatorApprovals`.
+   - Reflect `isApprovedForAll` accurately in return value.
+
+These annotations are designed to align with the expected behaviors as defined in ERC-721, strengthening correctness assurances and improving consistency across related functions.
+
+=== END OF THREAD ===

@@ -74,7 +74,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `account` cannot be the zero address.
      */
-    ///@notice postcondition _balances[_id][_owner] == balance  
+    ///@notice postcondition _balances[_id][_owner] == balance
 
     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance) {
         require(_owner != address(0), "ERC1155: balance query for the zero address");
@@ -172,8 +172,11 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     //          For instance, if two ids elements, say x and y, point to the same id, we have that _balances[_ids[x]][_from] = __verifier_old_uint(_balances[_ids[x]][_from]) - (_values[x] + _values[y])
     // Pos.     Postcondition for from, we need to create an analogous to "to".
     ///@notice precondition forall (uint i, uint j) !(_ids[i] == _ids[j]) ||  i == j
-    ///@notice postcondition forall (uint i) !(0 <= i && i < _ids.length && _from != _to) || (_balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i])
+    ///@notice postcondition _to != address(0)
+/// @notice postcondition _ids.length == _values.length
+/// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
 /// @notice postcondition forall (uint i) !(0 <= i && i < _ids.length && _from != _to) || (_balances[_ids[i]][_from] == __verifier_old_uint(_balances[_ids[i]][_from]) - _values[i])
+/// @notice postcondition forall (uint i) !(0 <= i && i < _ids.length && _from != _to) || (_balances[_ids[i]][_to] == __verifier_old_uint(_balances[_ids[i]][_to]) + _values[i])
 
     function safeBatchTransferFrom(
         address _from,

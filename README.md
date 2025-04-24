@@ -68,3 +68,56 @@ Create a .env file in the root directory and add your OpenAI API key.
     ```bash
     OPENAI_API_KEY=your_openai_api_key
     ```
+
+# Smart Contract Verification Analysis
+
+## Overview
+
+This repository contains tools and results for analyzing the verification status of smart contracts. The analysis focuses on examining how well different contract types (ERC20, ERC721, ERC1155) can be formally verified.
+
+## Analysis Results
+
+The verification analysis results are available in the `analysis_results/` directory:
+
+- **Comprehensive Report**: `analysis_results/verification_analysis_report.md`
+- **Visualizations**: Various PNG files showing verification success rates and patterns
+- **Raw Data**: Processed CSV files with detailed verification results
+- **Summary Statistics**: Overview of verification rates by contract and function
+
+### Key Findings
+
+- Overall verification success rate: 60.42%
+- ERC1155 contracts have the highest verification success rate (83.33%)
+- ERC20 contracts have the lowest verification success rate (50.37%)
+- Transfer-related functions are consistently the most challenging to verify
+- Functions that involve multiple state changes or complex conditions are harder to verify
+
+## Running the Analysis
+
+The analysis can be run using the Python scripts in the `analysis_results/` directory:
+
+1. **Main Analysis**: `python analysis_results/verification_analysis.py`
+2. **Function-Level Analysis**: `python analysis_results/function_analysis.py`
+
+## Data Sources
+
+The analysis is based on verification result data from experimental runs located in:
+
+- `experiments/results_*/` directories
+
+These directories contain CSV files with verification results for different smart contract types and implementations.
+
+## Visualization Types
+
+The analysis includes several types of visualizations:
+
+1. **Bar Charts**: Success rates by contract type and function
+2. **Heatmaps**: Success rates across different dimensions
+3. **Line Charts**: Progress over experiments
+4. **Pie Charts**: Distribution of verification statuses
+
+## Conclusions
+
+The analysis provides valuable insights into smart contract verifiability and highlights areas where improvements can be made to increase the reliability and security of blockchain applications.
+
+For more detailed findings and recommendations, please see the full report at `analysis_results/verification_analysis_report.md`.
