@@ -211,14 +211,13 @@ def main():
     # All available assistants from loop_contract_verifier.py
     available_models = [
         "4o_mini",
-        "4o_mini_single",
-        "4o_mini_erc20",
-        "4o_mini_erc721",
-        "4o_mini_erc1155",
-        "4o_mini_erc721_1155",
-        "4o_mini_erc20_1155",
-        "4o_mini_erc20_721",
-        "4o_mini_erc20_721_1155"
+        "erc20-721-1155-4-o-mini",
+        "erc20-4-o-mini",
+        "erc721-4-o-mini",
+        "erc1155-4-o-mini",
+        "erc20-721-4-o-mini",
+        "erc20-1155-4-o-mini",
+        "erc721-1155-4-o-mini",
     ]
     
     # Create directory paths for each model

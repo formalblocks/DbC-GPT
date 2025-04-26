@@ -174,7 +174,7 @@ def main():
     parser.add_argument('--force-all', action='store_true',
                       help='Force running all combinations, even if already processed')
     parser.add_argument('--assistant', type=str, default='4o_mini',
-                      choices=['4o_mini', '4.1-mini', '4o-mini-erc-1155-new', '4o_mini_single', '4o_mini_erc20', '4o_mini_erc721', '4o_mini_erc1155', '4o_mini_erc721_1155', '4o_mini_erc20_1155', '4o_mini_erc20_721', '4o_mini_erc20_721_1155'],
+                      choices=['4o_mini', 'erc20-721-1155-4-o-mini', 'erc20-4-o-mini', 'erc721-4-o-mini', 'erc1155-4-o-mini', 'erc20-721-4-o-mini', 'erc20-1155-4-o-mini', 'erc721-1155-4-o-mini'],
                       help='The assistant to use (default: 4o_mini)')
     args = parser.parse_args()
     

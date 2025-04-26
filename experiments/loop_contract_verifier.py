@@ -23,17 +23,24 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 # Assistant IDs
 ASSISTANT_IDS = {
+    # "4.1-mini": "asst_zX20A8d9KI7rIK8lLoRTgHK2",
+    # "4o_mini_single": "asst_qsyJh2SEYrnuYDiSs5NgdaXx",
+    # "4o_mini_erc20": "asst_UWMifHspYEAkIGyWtHzkWiwD",
+    # "4o_mini_erc721": "asst_WgHFp7pTzvutsqYE4zOGRAkc",
+    # "4o_mini_erc1155": "asst_lOku2pOPoQ5Kdd2elUlglALf",
+    # "4o_mini_erc721_1155": "asst_PgrUKdpgXSrVMyNqDm558yM2",
+    # "4o_mini_erc20_1155": "asst_Lvr2qeZs6mMaUmcx40xJGlJS",
+    # "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
+    # "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
+    # "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
     "4o_mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
-    "4.1-mini": "asst_zX20A8d9KI7rIK8lLoRTgHK2",
-    "4o_mini_single": "asst_qsyJh2SEYrnuYDiSs5NgdaXx",
-    "4o_mini_erc20": "asst_UWMifHspYEAkIGyWtHzkWiwD",
-    "4o_mini_erc721": "asst_WgHFp7pTzvutsqYE4zOGRAkc",
-    "4o_mini_erc1155": "asst_lOku2pOPoQ5Kdd2elUlglALf",
-    "4o_mini_erc721_1155": "asst_PgrUKdpgXSrVMyNqDm558yM2",
-    "4o_mini_erc20_1155": "asst_Lvr2qeZs6mMaUmcx40xJGlJS",
-    "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
-    "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
-    "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
+    "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
+    "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
+    "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
+    "erc1155-4-o-mini": "asst_M0wMZRzDVSdby3CfuMLtgWsc",
+    "erc20-721-4-o-mini": "asst_6o09ITzVveX37WwyVz42KhrY",
+    "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
+    "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
 
 }
 
@@ -579,7 +586,7 @@ def main():
     parser.add_argument('--context', type=str, required=True,
                         help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155")')
     parser.add_argument('--assistant', type=str, default='4o_mini',
-                        choices=['4o_mini', '4.1-mini', '4o_mini_single', '4o_mini_erc20', '4o_mini_erc721', '4o_mini_erc1155', '4o_mini_erc721_1155', '4o_mini_erc20_1155', '4o_mini_erc20_721', '4o_mini_erc20_721_1155', '4o-mini-erc-1155-new'], 
+                        choices=['4o_mini', 'erc20-721-1155-4-o-mini', 'erc20-4-o-mini', 'erc721-4-o-mini', 'erc1155-4-o-mini', 'erc20-721-4-o-mini', 'erc20-1155-4-o-mini', 'erc721-1155-4-o-mini'],
                         help='The assistant to use')
     parser.add_argument('--runs', type=int, default=10,
                         help='Number of verification runs')
