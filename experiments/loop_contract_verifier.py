@@ -33,7 +33,7 @@ ASSISTANT_IDS = {
     # "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
     # "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
     # "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
-    "4o_mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
+    "4o-mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
     "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
     "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
     "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
@@ -504,7 +504,7 @@ def loop(thread: Thread, message: str, max_iterations=10, requested_type="erc20"
         print("Verified!")
         return solidity_code
 
-def run_verification_process(requested_type, context_types, assistant_key="4o_mini", num_runs=10, max_iterations=10):
+def run_verification_process(requested_type, context_types, assistant_key="4o-mini", num_runs=10, max_iterations=10):
     """
     Run the verification process
     
@@ -585,8 +585,8 @@ def main():
                         help='The contract type to verify')
     parser.add_argument('--context', type=str, required=True,
                         help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155")')
-    parser.add_argument('--assistant', type=str, default='4o_mini',
-                        choices=['4o_mini', 'erc20-721-1155-4-o-mini', 'erc20-4-o-mini', 'erc721-4-o-mini', 'erc1155-4-o-mini', 'erc20-721-4-o-mini', 'erc20-1155-4-o-mini', 'erc721-1155-4-o-mini'],
+    parser.add_argument('--assistant', type=str, default='4o-mini',
+                        choices=['4o-mini', 'erc20-721-1155-4-o-mini', 'erc20-4-o-mini', 'erc721-4-o-mini', 'erc1155-4-o-mini', 'erc20-721-4-o-mini', 'erc20-1155-4-o-mini', 'erc721-1155-4-o-mini'],
                         help='The assistant to use')
     parser.add_argument('--runs', type=int, default=10,
                         help='Number of verification runs')

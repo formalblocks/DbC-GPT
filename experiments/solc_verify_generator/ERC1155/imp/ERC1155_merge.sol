@@ -75,7 +75,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - `account` cannot be the zero address.
      */
     ///@notice postcondition _balances[_id][_owner] == balance  
-/// @notice postcondition _owner != address(0)
 
     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance) {
         require(_owner != address(0), "ERC1155: balance query for the zero address");
@@ -91,7 +90,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      */
     ///@notice postcondition batchBalances.length == _owners.length 
 /// @notice postcondition batchBalances.length == _ids.length
-/// @notice postcondition forall (uint x) !(0 <= x && x < batchBalances.length) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
+/// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
 
     function balanceOfBatch(
         address[] memory _owners,
@@ -122,7 +121,6 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * @dev See {IERC1155-setApprovalForAll}.
      */
     ///@notice postcondition _operatorApprovals[msg.sender][_operator] == _approved 
-/// @notice postcondition _operatorApprovals[msg.sender][_operator] == true || _operatorApprovals[msg.sender][_operator] == false
 
     function setApprovalForAll(address _operator, bool _approved) public   {
         require(_msgSender() != _operator, "ERC1155: setting approval status for self");
@@ -131,8 +129,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         emit ApprovalForAll(_msgSender(), _operator, _approved);
     }
 
-    ///@notice postcondition _operatorApprovals[_owner][_operator] == __verifier_old_bool(_operatorApprovals[_owner][_operator]) || (_owner == msg.sender && _owner == _operator)
-/// @notice postcondition _owner != address(0)
+    ///@notice postcondition _operatorApprovals[_owner][_operator] == approved
 
     function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
         return _operatorApprovals[_owner][_operator];
@@ -142,9 +139,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     /// @notice precondition !_operatorApprovals[_from][msg.sender]
     ///@notice postcondition _to != address(0) 
 /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
-/// @notice postcondition __verifier_old_uint(_balances[_id][_from]) >= _value    
-/// @notice postcondition _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - _value
-/// @notice postcondition _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value
+/// @notice postcondition __verifier_old_uint ( _balances[_id][_from] ) >= _value    
+/// @notice postcondition _balances[_id][_from] == __verifier_old_uint ( _balances[_id][_from] ) - _value
+/// @notice postcondition _balances[_id][_to] == __verifier_old_uint ( _balances[_id][_to] ) + _value
 
     function safeTransferFrom(
         address _from,

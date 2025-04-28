@@ -73,7 +73,7 @@ def generate_all_combinations():
     
     return all_combinations
 
-def is_combination_processed(requested, context, assistant_key="4o_mini"):
+def is_combination_processed(requested, context, assistant_key="4o-mini"):
     """Check if a combination has already been processed"""
     # Convert context string to directory structure
     if not context:
@@ -95,7 +95,7 @@ def is_combination_processed(requested, context, assistant_key="4o_mini"):
     
     return False
 
-def get_processed_combinations(assistant_key="4o_mini"):
+def get_processed_combinations(assistant_key="4o-mini"):
     """Find all combinations that have already been processed"""
     processed = []
     
@@ -173,9 +173,9 @@ def main():
                       help='Skip combinations that have already been processed (default: True)')
     parser.add_argument('--force-all', action='store_true',
                       help='Force running all combinations, even if already processed')
-    parser.add_argument('--assistant', type=str, default='4o_mini',
-                      choices=['4o_mini', 'erc20-721-1155-4-o-mini', 'erc20-4-o-mini', 'erc721-4-o-mini', 'erc1155-4-o-mini', 'erc20-721-4-o-mini', 'erc20-1155-4-o-mini', 'erc721-1155-4-o-mini'],
-                      help='The assistant to use (default: 4o_mini)')
+    parser.add_argument('--assistant', type=str, default='4o-mini',
+                      choices=['4o-mini', 'erc20-721-1155-4-o-mini', 'erc20-4-o-mini', 'erc721-4-o-mini', 'erc1155-4-o-mini', 'erc20-721-4-o-mini', 'erc20-1155-4-o-mini', 'erc721-1155-4-o-mini'],
+                      help='The assistant to use (default: 4o-mini)')
     args = parser.parse_args()
     
     # Get all combinations
