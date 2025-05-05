@@ -19,7 +19,6 @@ import "./ERC165.sol";
  *
  * _Available since v3.1._
  */
-///@notice invariant forall (uint256 i) sums[i] == total_supplies[i]
 contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     using Address for address;
 
@@ -74,9 +73,10 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `account` cannot be the zero address.
      */
+    ///@notice postcondition _balances[_id][_owner] == balance
 
     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance) {
-        require(_owner != address(0), "ERC1155: balance query for the zero address");
+        require(_owner != address(0));
         return _balances[_id][_owner];
     }
 
@@ -87,7 +87,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `accounts` and `ids` must have the same length.
      */
-
+    /// @notice postcondition batchBalances.length == _owners.length
+    /// @notice postcondition batchBalances.length == _ids.length
+    /// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
     function balanceOfBatch(
         address[] memory _owners,
         uint256[] memory _ids
@@ -96,16 +98,14 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         view
         returns (uint256[] memory batchBalances)
     {
-        require(_owners.length == _ids.length, "ERC1155: _owners and _ids length mismatch");
+        require(_owners.length == _ids.length);
 
         batchBalances = new uint256[](_owners.length);
 
         uint256 length = _owners.length;
-        /// @notice invariant (batchBalances.length == _ids.length && batchBalances.length == _owners.length)
-        /// @notice invariant (0 <= i && i <= _owners.length)
-        /// @notice invariant (0 <= i && i <= _ids.length)
-        /// @notice invariant forall(uint k)  _ids[k] == __verifier_old_uint(_ids[k])
-        /// @notice invariant forall (uint j) !(0 <= j && j < i && j < _owners.length ) || batchBalances[j] == _balances[_ids[j]][_owners[j]]
+        /// @notice invariant batchBalances.length == _ids.length
+        /// @notice invariant batchBalances.length == _owners.length
+        /// @notice invariant forall (uint j) !(0 <= j && j < i) || batchBalances[j] == _balances[_ids[j]][_owners[j]]
         for (uint256 i = 0; i < length; ++i) {
             batchBalances[i] = _balances[_ids[i]][_owners[i]]; // Modified (extracted from balanceOf)
         }
@@ -116,19 +116,29 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     /**
      * @dev See {IERC1155-setApprovalForAll}.
      */
+    ///@notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
 
     function setApprovalForAll(address _operator, bool _approved) public   {
-        require(_msgSender() != _operator, "ERC1155: setting approval status for self");
+        require(_msgSender() != _operator);
 
         _operatorApprovals[_msgSender()][_operator] = _approved;
         emit ApprovalForAll(_msgSender(), _operator, _approved);
     }
 
+    ///@notice postcondition _operatorApprovals[_owner][_operator] == approved
 
     function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
         return _operatorApprovals[_owner][_operator];
     }
 
+
+    /// @notice postcondition _to != address(0)
+    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+    /// @notice postcondition __verifier_old_uint(_balances[_id][_from]) >= _value    
+    /// @notice postcondition _from == _to || _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - _value
+    /// @notice postcondition _from != _to || _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from])
+    /// @notice postcondition _from == _to || _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value
+    /// @notice postcondition _from != _to || _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to])
     function safeTransferFrom(
         address _from,
         address _to,
@@ -141,62 +151,98 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         
     {
         require(
-            _from == _msgSender() || isApprovedForAll(_from, _msgSender()),
-            "ERC1155: caller is not owner nor approved"
+            _from == _msgSender() || isApprovedForAll(_from, _msgSender())
         );
         _safeTransferFrom(_from, _to, _id, _value, _data);
     }
 
-    
-    mapping(uint256 => uint256) private total_supplies;
-    // Ghost variable as before
-    mapping(uint256 => uint256) private sums;
-    
-    // Comments here because solc-verify does not allow inline comments with pre/post.
-    // Pre 1.   Sort of axiomatises _old_balances == old(_balances)
-    // Pre 2.   ids need to be injective, otherwise expressing some of these conditions goes beyond what solc-verify can do.
-    //          For instance, if two ids elements, say x and y, point to the same id, we have that _balances[_ids[x]][_from] = __verifier_old_uint(_balances[_ids[x]][_from]) - (_values[x] + _values[y])
-    // Pos.     Postcondition for from, we need to create an analogous to "to".
-
+    /// @notice precondition forall (uint x, uint y) !(0 <= x && x < _ids.length) || !(0 <= y && y < _ids.length) || x == y || _ids[y] != _ids[x]
+    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
+    /// @notice postcondition _to != address(0)
+    /// @notice postcondition _ids.length == _values.length
+    /// @notice postcondition forall (uint x) !(0 <= x && x < _ids.length) || (__verifier_old_uint(_balances[_ids[x]][_from]) >= _values[x])
+    /// @notice postcondition forall (uint x) !(0 <= x && x < _ids.length) || (_from == _to) || (_balances[_ids[x]][_to] == __verifier_old_uint(_balances[_ids[x]][_to]) + _values[x])
+    /// @notice postcondition forall (uint x) _from != _to || _balances[_ids[x]][_to] == __verifier_old_uint(_balances[_ids[x]][_to])
+    /// @notice postcondition forall (uint x) !(0 <= x && x < _ids.length) || (_from == _to) || ( _balances[_ids[x]][_from] == __verifier_old_uint(_balances[_ids[x]][_from]) - _values[x])
+    /// @notice postcondition forall (uint x) _from != _to || _balances[_ids[x]][_from] == __verifier_old_uint(_balances[_ids[x]][_from])
     function safeBatchTransferFrom(
         address _from,
         address _to,
         uint256[] memory _ids,
-        uint256[] memory _values,
-        bytes memory _data
-    ) public /*virtual override*/{
+        uint256[] memory _values
+    )
+        public
+    {
         require(
-            _from == msg.sender || _operatorApprovals[_from][msg.sender],
-            "ERC1155: caller is not token owner or approved"
+            _from == _msgSender() || isApprovedForAll(_from, _msgSender())
         );
+        require(_ids.length == _values.length);
+        require(_to != address(0));
+        require(_from != _to);
 
-        require(_ids.length == _values.length, "ERC1155: ids and amounts length mismatch");
-        require(_to != address(0), "ERC1155: transfer to the zero address");
+        /// @notice invariant forall (uint x) !(0 < x && x < i) || _ids[x-1] < _ids[x]
+        /// @notice invariant forall (uint x, uint y) !(0 <= x && x < i) || !(0 <= y && y < i) || x >= y || _ids[x] < _ids[y]
+        /// @notice invariant forall (uint x, uint y) !(0 <= x && x < i) || !(0 <= y && y < i) || x == y || _ids[y] != _ids[x]
+        for (uint256 i = 1; i < _ids.length; ++i) {
+            if (i < _ids.length) {
+                require(_ids[i-1] < _ids[i]);
+            }
+        }
 
-        address operator = msg.sender;
-        ///@notice invariant forall (uint256 i) sums[i] == total_supplies[i]
-        ///@notice invariant forall (uint j) !(0 <= j && j < i && _from != _to) || (_balances[_ids[j]][_from] == __verifier_old_uint(_balances[_ids[j]][_from]) - _values[j])
-        ///@notice invariant forall (uint j) !(0 <= j && j < i && _from != _to) || (_balances[_ids[j]][_to] == __verifier_old_uint(_balances[_ids[j]][_to]) + _values[j])
-        ///@notice invariant forall (uint j) !(0 <= j && j < i && _from == _to) || (_balances[_ids[j]][_to] == __verifier_old_uint(_balances[_ids[j]][_to]))
-        ///@notice invariant forall (uint j) !(0 <= j && j < i && _from == _to) || (_balances[_ids[j]][_from] == __verifier_old_uint(_balances[_ids[j]][_from]))
-        ///@notice invariant forall (uint j) !(0 > j || j >= i) || (_balances[_ids[j]][_from] == __verifier_old_uint(_balances[_ids[j]][_from]))
-        ///@notice invariant forall (uint j) !(0 > j || j >= i) || (_balances[_ids[j]][_to] == __verifier_old_uint(_balances[_ids[j]][_to]))
+        /// @notice invariant forall (uint x) !(0 < x && x < _ids.length) || _ids[x-1] < _ids[x]
+        // _safeBatchTransferFrom(_from, _to, _ids, _values, _data);
+        
+        /// @notice invariant _ids.length == _values.length
+        /// @notice invariant forall (uint x, uint y) !(0 <= x && x < i) || !(0 <= y && y < i) || x == y || _ids[y] != _ids[x]
+        /// @notice invariant forall (uint w) !(0 <= w && w < i) || __verifier_old_uint(_balances[_ids[w]][_from]) >= _values[w]
+        /// @notice invariant forall (uint w) !(i <= w && w < _ids.length) || _balances[_ids[w]][_from] == __verifier_old_uint(_balances[_ids[w]][_from])
+        /// @notice invariant forall (uint w) !(i <= w && w < _ids.length) || _balances[_ids[w]][_to] == __verifier_old_uint(_balances[_ids[w]][_to])
+        /// @notice invariant forall (uint w) !(0 <= w && w < i) || _balances[_ids[w]][_to] == __verifier_old_uint(_balances[_ids[w]][_to]) + _values[w]
+        /// @notice invariant forall (uint w) !(0 <= w && w < i) || _balances[_ids[w]][_from] == __verifier_old_uint(_balances[_ids[w]][_from]) - _values[w]
         for (uint256 i = 0; i < _ids.length; ++i) {
-            uint256 id = _ids[i];
-            uint256 amount = _values[i];
-  
-            // Remove string from this requires as it changes the mem_arr
-            //require(_balances[id][from] >= amount);
-             
-            sums[id] = sums[id] - _balances[id][_from];
-            _balances[id][_from]= _balances[id][_from] - amount;
-            sums[id] = sums[id] + _balances[id][_from];
+            require(_balances[_ids[i]][_from] >= _values[i]);
+            _balances[_ids[i]][_from] = _balances[_ids[i]][_from] - _values[i];
+            _balances[_ids[i]][_to] = _balances[_ids[i]][_to] + _values[i];
+        }
+    }
 
-            sums[id] = sums[id] - _balances[id][_to]; 
-            _balances[id][_to] = _balances[id][_to] + amount;
-            sums[id] = sums[id] + _balances[id][_to]; 
-       }
-    }  
+    /**
+     * @dev xref:ROOT:erc1155.adoc#batch-operations[Batched] version of {_safeTransferFrom}.
+     *
+     * Emits a {TransferBatch} event.
+     *
+     * Requirements:
+     *
+     * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155BatchReceived} and return the
+     * acceptance magic value.
+     */
+    
+    function _safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    )
+        internal
+        
+    {
+        
+        // require(false);
+
+        // address operator = _msgSender();
+
+        // _beforeTokenTransfer(operator, from, to, ids, amounts, data);
+        // @notice invariant forall (uint y, uint z) y == z || ids[y] != ids[z]
+        
+        
+
+        // emit TransferBatch(operator, from, to, ids, amounts);
+
+        // _doSafeBatchTransferAcceptanceCheck(operator, from, to, ids, amounts, data);
+    }
+
+
 
     /**
      * @dev Transfers `amount` tokens of token type `id` from `from` to `to`.
@@ -220,22 +266,22 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         internal
         
     {
-        require(to != address(0), "ERC1155: transfer to the zero address");
+        require(to != address(0));
 
         address operator = _msgSender();
 
         _beforeTokenTransfer(operator, from, to, _asSingletonArray(id), _asSingletonArray(amount), data);
 
         uint256 fromBalance = _balances[id][from];
-        require(fromBalance >= amount, "ERC1155: insufficient balance for transfer");
+        require(fromBalance >= amount);
         _balances[id][from] = fromBalance - amount;
         _balances[id][to] += amount;
 
         emit TransferSingle(operator, from, to, id, amount);
 
-        _doSafeTransferAcceptanceCheck(operator, from, to, id, amount, data);
+        // _doSafeTransferAcceptanceCheck(operator, from, to, id, amount, data);
     }
-
+    
 
     /**
      * @dev Sets a new URI for all token types, by relying on the token type ID
@@ -272,7 +318,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * acceptance magic value.
      */
     function _mint(address account, uint256 id, uint256 amount, bytes memory data) internal  {
-        require(account != address(0), "ERC1155: mint to the zero address");
+        require(account != address(0));
 
         address operator = _msgSender();
 
@@ -399,8 +445,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         uint256 amount,
         bytes memory data
     )
-        private
+        internal
     {
+        require(false);
         if (to.isContract()) {
             // try IERC1155Receiver(to).onERC1155Received(operator, from, id, amount, data) returns (bytes4 response) {
             //     if (response != IERC1155Receiver(to).onERC1155Received.selector) {

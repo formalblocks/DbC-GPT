@@ -34,14 +34,22 @@ ASSISTANT_IDS = {
     # "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
     # "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
     "4o-mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
-    "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
-    "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
-    "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
-    "erc1155-4-o-mini": "asst_M0wMZRzDVSdby3CfuMLtgWsc",
-    "erc20-721-4-o-mini": "asst_6o09ITzVveX37WwyVz42KhrY",
-    "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
-    "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
-
+    # "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
+    # "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
+    # "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
+    # "erc1155-4-o-mini": "asst_M0wMZRzDVSdby3CfuMLtgWsc",
+    # "erc20-721-4-o-mini": "asst_6o09ITzVveX37WwyVz42KhrY",
+    # "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
+    # "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
+    "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
+    "erc-1155-005-3-16": "asst_nsa6edZTsNNWj4SBFSPeFYPq",
+    "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
+    "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
+    "erc-1155-005-5-16": "asst_8ZL8R3zwXyurmmjkFX14kcuS",
+    "erc-1155-010-5-16": "asst_wOnRMvawOAI1sO83lfRWWBLu",
+    "erc-1155-001-7-16": "asst_sZLa64l2Xrb1zNhogDl7RXap",
+    "erc-1155-005-7-16": "asst_m8y0QMRJVtvDRYcPZLVIcHW6",
+    "erc-1155-001-7-16": "asst_MRg3E5ds4NRfFKPTPqLsx9rS",
 }
 
 # Paths to interface templates and EIP docs
@@ -334,6 +342,7 @@ class SolcVerifyWrapper:
         Utils.save_string_to_file(cls.SPEC_FILE_PATH, soldity_spec_str)
         from solc_verify_generator.main import generate_merge
         try:
+            print("GENERATING MERGE", cls.SPEC_FILE_PATH, template_path, merge_path)
             generate_merge(cls.SPEC_FILE_PATH, template_path, merge_path)
         except RuntimeError as e:
             return VerificationResult(*e.args)
@@ -498,7 +507,7 @@ def loop(thread: Thread, message: str, max_iterations=10, requested_type="erc20"
         ```
         """
         verification_result.output = instructions + verification_result.output
-        logging.info("trying again with solc-verify output: " + str(verification_result.output))
+        logging.info("trying again with solc-verify output")
         return loop(thread, verification_result.output, max_iterations, requested_type)
     else:
         print("Verified!")
@@ -586,7 +595,7 @@ def main():
     parser.add_argument('--context', type=str, required=True,
                         help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155")')
     parser.add_argument('--assistant', type=str, default='4o-mini',
-                        choices=['4o-mini', 'erc20-721-1155-4-o-mini', 'erc20-4-o-mini', 'erc721-4-o-mini', 'erc1155-4-o-mini', 'erc20-721-4-o-mini', 'erc20-1155-4-o-mini', 'erc721-1155-4-o-mini'],
+                        choices=['4o-mini', 'erc-1155-001-3-16', 'erc-1155-005-3-16', 'erc-1155-010-3-16', 'erc-1155-001-5-16', 'erc-1155-005-5-16', 'erc-1155-010-5-16', 'erc-1155-001-7-16', 'erc-1155-005-7-16', 'erc-1155-001-7-16'],
                         help='The assistant to use')
     parser.add_argument('--runs', type=int, default=10,
                         help='Number of verification runs')
