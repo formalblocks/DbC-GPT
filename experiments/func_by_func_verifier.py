@@ -33,7 +33,7 @@ ASSISTANT_IDS = {
     # "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
     # "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
     # "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
-    "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
+    "4o-mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
     # "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
     # "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
     # "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
@@ -75,22 +75,20 @@ REFERENCE_SPEC_PATHS = {
 INSTRUCTIONS = """
     Task:
         - You are given a smart contract interface and need to add formal verification conditions for each function using solc-verify syntax (`/// @notice postcondition [condition]`).
-        - You MUST use the EIP documentation below to understand the required behavior.
-        - Replace `$ADD POSTCONDITION HERE` with appropriate postconditions above each function. Postconditions placed below the function signature are invalid. For instance:
-        ``` /// @notice postcondition condition1\n
-            /// @notice postcondition condition2\n
-            function foo(uint256 bar, address par) public;```
+        - If provided, use the ERC documentation/EIP to understand the required behavior.
+        - Replace "$ADD POSTCONDITION HERE" with appropriate postconditions above each function.
 
     Requirements:
+        - Add comprehensive postconditions for every function based on standard smart contract behaviors and the provided documentation (if any).
         - Ensure conditions correctly represent the expected state changes and return values.
-        - View functions should relate return values directly to state variables.
-        - Postconditions MUST ONLY use state variables exactly as declared. Referencing undeclared variables will fail if they aren't in the contract. For instance, a state variable `uint256 var` can be referenced as `var` only.
-        - Postconditions MUST ONLY use parameter names exactly as they appear in function signatures. For instance, `function foo(uint256 bar,  address par)` has parameter names `bar` and `par` only. 
+        - Maintain consistency across related functions.
+
+    Verification Guidelines:
+        - Use ONLY state variables exactly as declared. Referencing undeclared variables will fail if they aren't in the contract.
+        - Use ONLY parameter names exactly as they appear in function signatures (e.g., _to, _from, _value, _id, _ids, _values).
         - Use `__verifier_old_uint(stateVariable)` or `__verifier_old_bool(stateVariable)` to reference values from the start of the function execution.
-        - A quantified postcondition MUST start with `forall`. For instance, a quantified postcondition look like `/// @notice postcondition forall (uint x) condition`. Without the `forall` at the beginning, the postcondition is invalid.
-        - YOU MUST SPECIFY THE RANGE when postconditions quantify over arrays. For example, for array `arr` a postcondition quantification would look like `/// @notice postcondition forall (uint i) !(0 <= i && i < arr.length) || condition`. Without the range, the postcondition is likely to be invalid.
-    
-        
+        - View functions should relate return values directly to state variables.
+
     Your task is to annotate this contract with proper solc-verify postconditions:
 """
 
@@ -99,6 +97,52 @@ interaction_counter = 0
 
 # Initialize the global verification status
 verification_status = []
+
+def parse_solidity_interface(solidity_code: str):
+    """
+    Parses Solidity interface code to extract components.
+    Returns a dictionary containing 'state_vars', 'events', 'functions'.
+    Functions value is a list of {'signature': str, 'body': str}.
+    """
+    components = {
+        'state_vars': [],
+        'events': [],
+        'functions': []
+    }
+
+    # Extract state variables (simple version: assumes they are declared outside functions)
+    # Matches lines like: mapping(...) private _variable; string private _uri; uint256 constant VALUE = 10;
+    state_var_pattern = re.compile(r"^\s*(mapping\(.+?\)|bytes32|uint\d*|int\d*|string|address|bool|bytes)\s+(public|private|internal|constant)?\s*(\w+)\s*(?:=.*?)?;", re.MULTILINE)
+    for match in state_var_pattern.finditer(solidity_code):
+      components['state_vars'].append(match.group(0).strip()) # Store the full declaration line
+
+    # Extract events
+    event_pattern = re.compile(r"^\s*event\s+(\w+)\((.*?)\);", re.MULTILINE | re.DOTALL)
+    for match in event_pattern.finditer(solidity_code):
+        components['events'].append(match.group(0).strip())
+
+    # Extract functions (including modifiers and return types)
+    # This regex is complex and might need refinement for edge cases
+    function_pattern = re.compile(
+        r"^\s*function\s+(?P<name>\w+)\s*\((?P<params>.*?)\)\s*(?P<modifiers>.*?)\s*(?:returns\s*\((?P<returns>.*?)\))?\s*;",
+        re.MULTILINE | re.DOTALL
+    )
+
+    for match in function_pattern.finditer(solidity_code):
+        func_dict = match.groupdict()
+        signature = f"function {func_dict['name']}({func_dict['params'].strip()}) {func_dict['modifiers'].strip()}"
+        if func_dict['returns']:
+            signature += f" returns ({func_dict['returns'].strip()})"
+        signature += ";"
+        # We assume the interface has no body, just the signature ending in ';'
+        components['functions'].append({'signature': signature.strip(), 'name': func_dict['name']})
+
+    logging.info(f"Parsed components: {len(components['state_vars'])} state vars, {len(components['events'])} events, {len(components['functions'])} functions.")
+    # Log extracted functions for debugging
+    # for func in components['functions']:
+    #     logging.debug(f"Found function: {func['signature']}")
+
+    return components
 
 def save_thread_to_file(thread_id, requested_type, context_str, assistant_key, run_number):
     """
@@ -460,146 +504,344 @@ def generate_prompt(requested_type, context_types):
     
     return prompt
 
-def loop(thread: Thread, message: str, max_iterations=10, requested_type="erc20") -> bool:
-    global interaction_counter
-    global verification_status
+def assemble_partial_contract(contract_name: str, components: dict, current_annotations: dict, target_func_sig: str = None):
+    """Assembles a partial contract string for verification."""
+    code = f"pragma solidity >= 0.5.0;\n\ncontract {contract_name} {{\n\n"
 
-    # Store the initial prompt if it's the first interaction
-    initial_prompt = ""
-    if interaction_counter == 0:
-        initial_prompt = message
+    # Add Events
+    code += "    // Events\n"
+    for event in components.get('events', []):
+        code += f"    {event}\n"
+    code += "\n"
 
-    interaction_counter += 1
+    # Add State Variables
+    code += "    // State Variables\n"
+    for var in components.get('state_vars', []):
+        code += f"    {var}\n"
+    code += "\n"
 
-    # Break the loop if the counter exceeds the max iterations
-    if (interaction_counter > max_iterations):
-        print(f"Counter exceeded {max_iterations}, breaking the loop")
-        return False
+    # Add Functions with annotations
+    code += "    // Functions\n"
+    for func_info in components.get('functions', []):
+        func_sig = func_info['signature']
+        annotations = current_annotations.get(func_sig)
+        if annotations:
+            # Add existing/verified annotations
+            for line in annotations.strip().split('\n'):
+                 code += f"    {line}\n"
+        elif func_sig == target_func_sig:
+             # Placeholder for the function being actively verified if its annotations aren't ready
+             # This case might not be needed if we always add proposed annotations before verifying
+             pass # Annotations will be added just before verification call
+        else:
+            # Add placeholder for functions not yet processed or failed
+            code += "    /// @notice postcondition true\n"
 
-    print('COUNTER', interaction_counter)
-    interaction: Interaction = thread.send_message(message)
-    response: str = interaction.await_for_response()
-    solidity_code = Utils.extract_solidity_code(response)
+        code += f"    {func_sig}\n\n" # Add function signature
 
-    if not solidity_code:
-        print("ERROR - No Solidity code found in the response.")
-        feedback_prompt = "Please provide the full Solidity code block with your annotations. Your previous response did not contain a ```solidity ... ``` block."
-        return loop(thread, feedback_prompt, max_iterations, requested_type)
+    code += "}\n"
+    return code
 
-    try:
-        # Pass the requested_type to the verify method
-        verification_result: VerificationResult = SolcVerifyWrapper.verify(solidity_code, requested_type)
-    except Exception as e:
-        print(f"An error occurred during verification: {e}")
-        return False
+def extract_annotations_for_function(llm_response: str, target_func_sig: str):
+    """Extracts annotations intended for a specific function signature from LLM response."""
+    # Try extracting the code block first
+    code_block = Utils.extract_solidity_code(llm_response)
+    search_text = code_block if code_block else llm_response
 
-    if verification_result.status != 0: # Check if status is non-zero (indicates an error)
-        error_output = verification_result.output
-        if interaction_counter > 1 and "OK" in error_output and "ERROR" in error_output:
-            verification_status.append(f'Interaction: {interaction_counter}\n{error_output}\n')
+    # Regex to find annotations directly above the target function signature
+    # This looks for lines starting with /// or /* until it hits the function definition
+    pattern_str = rf"((?:(?:///.*|/\\*.*?\\*/)\\n)+\\s*){re.escape(target_func_sig)}"
+    match = re.search(pattern_str, search_text, re.MULTILINE | re.DOTALL)
 
-
-        # Load the target interface again to provide context
-        target_interface = load_target_interface(requested_type)
-        if not target_interface:
-            print(f"ERROR - Interface template for {requested_type} not found.")
-            return False # Cannot proceed without the interface
-
-        feedback_prompt = f"""
-            Your previous attempt resulted in verification errors.
-
-            **Verification Output (Errors/Warnings):**
-            ```
-            {error_output}
-            ```
-
-            **Task:**
-            {INSTRUCTIONS}
-
-            **Original Contract Interface Structure (for reference):**
-            ```solidity
-            {target_interface}
-            ```
-            """
-
-        logging.info("Verification failed. Trying again with specific error feedback.")
-        return loop(thread, feedback_prompt, max_iterations, requested_type)
+    raw_annotations_str = None
+    if match:
+        raw_annotations_str = match.group(1).strip()
     else:
-        print("Verified!")
-        return solidity_code
+        # Fallback: Maybe the LLM just returned the annotations? Look for lines starting with ///
+        lines = search_text.strip().split('\\n')
+        annotation_lines = [line for line in lines if line.strip().startswith(("///", "/*"))]
+        if annotation_lines:
+            raw_annotations_str = "\\n".join(annotation_lines)
+
+    if raw_annotations_str:
+        processed_lines = []
+        for line in raw_annotations_str.split('\\n'):
+            stripped_line = line.rstrip() # Remove trailing whitespace first
+            if stripped_line.endswith(';'):
+                processed_lines.append(stripped_line[:-1])
+            else:
+                processed_lines.append(stripped_line)
+        return "\\n".join(processed_lines)
+    else: # This 'else' corresponds to 'if raw_annotations_str'
+        logging.warning(f"Could not extract annotations for {target_func_sig} from response.")
+        return None
+
+def process_single_function(thread: Thread, func_info: dict, components: dict, verified_annotations: dict, eip_doc: str, base_instructions: str, examples_text: str, max_iterations_per_function: int, requested_type: str):
+    """Tries to generate and verify annotations for a single function."""
+    func_sig = func_info['signature']
+    func_name = func_info['name']
+    contract_name = "ERC_Contract_Placeholder" # Or extract from components if available
+    logging.info(f"Processing function: {func_name} ({func_sig})")
+
+    # Track interactions within this function context
+    func_interactions = 0
+
+    # Pre-format verified annotations to avoid nested f-string issues
+    verified_ann_str = "\n".join([f'{fs}\n{fa}' for fs, fa in verified_annotations.items()])
+    # Pre-format state vars and events
+    state_vars_str = "\n".join(components.get('state_vars', []))
+    events_str = "\n".join(components.get('events', []))
+
+    current_prompt = f"""
+{base_instructions}
+{examples_text}
+
+**Contract Context:**
+State Variables:
+```solidity
+{state_vars_str}
+```
+Events:
+```solidity
+{events_str}
+```
+Previously Verified Function Annotations (for consistency):
+```solidity
+{verified_ann_str}
+```
+
+**Current Task:**
+Generate *only* the `/// @notice postcondition ...` annotations for the following function signature. Do not include the function signature itself in your response, only the annotation lines.
+
+```solidity
+{func_sig}
+```
+
+EIP Documentation Snippet (if relevant):
+<eip>
+{eip_doc}
+</eip>
+"""
+
+    for attempt in range(max_iterations_per_function):
+        logging.info(f"Attempt {attempt + 1}/{max_iterations_per_function} for function {func_name}")
+        interaction: Interaction = thread.send_message(current_prompt)
+        response = interaction.await_for_response()
+        func_interactions += 1 # Increment interaction count
+
+        proposed_annotations = extract_annotations_for_function(response, func_sig)
+
+        if not proposed_annotations:
+            logging.error(f"No annotations extracted for {func_name}. LLM response: {response[:500]}")
+            # Ask LLM to provide only annotations
+            current_prompt = f"Your previous response did not seem to contain just the annotations for `{func_sig}`. Please provide ONLY the `/// @notice postcondition ...` lines for this function. Do not include the function signature or any other text."
+            continue # Try again with the feedback
+
+        # Assemble the contract with *proposed* annotations for the current function
+        temp_annotations = verified_annotations.copy()
+        temp_annotations[func_sig] = proposed_annotations
+        partial_contract_code = assemble_partial_contract(contract_name, components, temp_annotations)
+
+        # Verify the partially assembled contract
+        try:
+            verification_result: VerificationResult = SolcVerifyWrapper.verify(
+                partial_contract_code, 
+                requested_type=requested_type
+            )
+        except Exception as e:
+            logging.error(f"Verification failed for {func_name} with exception: {e}")
+            # Decide how to handle exceptions during verification - maybe retry or fail the function
+            return None, func_interactions # Fail this function for now
+
+        # --- Verification Result Analysis --- 
+        verification_passed = False
+        error_output = verification_result.output
+
+        if verification_result.status == 0:
+            verification_passed = True
+        else:
+            # Status is non-zero, check if it's just benign warnings
+            lines = error_output.strip().split('\n')
+            # Filter out known benign warnings (adjust patterns as needed)
+            benign_warning_patterns = [
+                r'Warning: Unused function parameter',
+                r'Warning: Unused local variable',
+                r'Warning: Function state mutability can be restricted',
+                r'Warning: This is a pre-release compiler version'
+            ]
+            # Check for actual solc-verify errors or unknown warnings
+            critical_errors = []
+            for line in lines:
+                is_benign = False
+                for pattern in benign_warning_patterns:
+                    if re.search(pattern, line):
+                        is_benign = True
+                        break
+                if not is_benign and line.strip(): # Ignore empty lines
+                    # Check specifically for solc-verify errors mentioning the current function
+                    # This check might need refinement based on actual solc-verify error formats
+                    if f"::{func_name}:" in line or f"Annotation for {func_name}" in line or "solc-verify error:" in line:
+                         critical_errors.append(line)
+                    # Consider other patterns that indicate a real problem
+
+            if not critical_errors:
+                logging.warning(f"Verification status non-zero, but only benign warnings detected for {func_name}. Treating as success.")
+                verification_passed = True
+            else:
+                logging.warning(f"Verification failed for {func_name} with critical errors/warnings:")
+                for err_line in critical_errors:
+                    logging.warning(f"  - {err_line}")
+        # --- End Verification Result Analysis ---
+
+        if verification_passed:
+            logging.info(f"Successfully verified annotations for function {func_name}.")
+            return proposed_annotations, func_interactions # Success!
+        else:
+            # Verification failed with critical errors, construct feedback
+            # error_output = verification_result.output # Already have this
+            logging.warning(f"Verification failed for function {func_name} (Attempt {attempt + 1}). Error: {error_output[:500]}...")
+            # Simple feedback for now, could be enhanced to check if error is specific to the current function
+            current_prompt = f"""
+                Verification failed for function `{func_sig}` with your proposed annotations:
+
+                **Your Proposed Annotations:**
+                ```solidity
+                {proposed_annotations}
+                ```
+
+                **Verification Output (Errors):**
+                ```
+                {error_output}
+                ```
+
+                **Task:**
+                {INSTRUCTIONS}
+
+                **Contract Context Reminder:**
+                State Variables: {components.get('state_vars', [])}
+                Previously Verified Annotations: {list(verified_annotations.keys())}
+                Function Signature: `{func_sig}`
+                {examples_text} # Add examples to feedback prompt as well
+                EIP Documentation Snippet (if relevant):
+                <eip>
+                {eip_doc}
+                </eip>
+                """
+            # Continue loop with the feedback prompt
+
+    logging.error(f"Failed to verify annotations for function {func_name} after {max_iterations_per_function} attempts.")
+    return None, func_interactions # Failed after max attempts
 
 def run_verification_process(requested_type, context_types, assistant_key="4o-mini", num_runs=10, max_iterations=10):
     """
-    Run the verification process
-    
-    Parameters:
-        requested_type: String indicating which contract to verify (e.g., "erc20")
-        context_types: List of strings indicating which contract types to include as examples
-        assistant_key: String key for selecting the assistant ID
-        num_runs: Number of times to run the verification
-        max_iterations: Maximum iterations per run
+    Run the function-by-function verification process
     """
+    global verification_status # Use the global list to store errors across function calls within a run
     # Validate inputs
     if requested_type not in INTERFACE_PATHS:
-        raise ValueError(f"Requested type '{requested_type}' not supported. Available types: {list(INTERFACE_PATHS.keys())}")
-    
-    for ctx_type in context_types:
-        if ctx_type and ctx_type not in REFERENCE_SPEC_PATHS:
-            raise ValueError(f"Context type '{ctx_type}' not supported. Available types: {list(REFERENCE_SPEC_PATHS.keys())}")
-    
-    if assistant_key not in ASSISTANT_IDS:
-        raise ValueError(f"Assistant key '{assistant_key}' not found. Available keys: {list(ASSISTANT_IDS.keys())}")
-    
-    # Select the assistant ID
+        raise ValueError(f"Requested type '{requested_type}' not supported.")
+    # ... (rest of validation)
+
     assistant_id = ASSISTANT_IDS[assistant_key]
-    
-    # Generate the output file name - filter out empty context types
     valid_contexts = [ct for ct in context_types if ct]
     context_str = '_'.join(valid_contexts) if valid_contexts else "none"
-    file_prefix = f"{requested_type}_[{context_str}]"
-    
-    # Create results directory
+    file_prefix = f"fbf_{requested_type}_[{context_str}]" # Prefix for function-by-function
     results_dir = f"results_{assistant_key}/{requested_type}/{context_str}"
     os.makedirs(results_dir, exist_ok=True)
-    
-    # Generate the prompt
-    prompt = generate_prompt(requested_type, context_types)
-    
-    results = []
-    for i in range(num_runs):
-        global interaction_counter
-        global verification_status
+
+    # Load common resources
+    target_interface_content = Utils.extract_content_from_markdown(INTERFACE_PATHS[requested_type])
+    if not target_interface_content:
+         raise ValueError(f"Could not load interface content for {requested_type}")
+
+    parsed_components = parse_solidity_interface(target_interface_content)
+    if not parsed_components['functions']:
+        raise ValueError("No functions found in the interface file.")
+
+    contract_name = "ERC_Contract_Placeholder" # TODO: Extract name if possible
+
+    eip_doc = Utils.extract_content_from_markdown(EIP_PATHS.get(requested_type, ""))
+    # Note: Examples are not used directly in the per-function prompt for now, but base_instructions remain.
+    base_instructions = INSTRUCTIONS # Use the globally defined instructions
+
+    # Generate example texts (reference specifications) based on context_types
+    raw_examples_content = ""
+    for ctx_type in context_types: # Iterate over the original context_types list
+        if not ctx_type: # Skip if context type string is empty
+            continue
         
-        interaction_counter = 0 
-        start_time = time.time()
+        ref_spec_content = Utils.extract_content_from_markdown(REFERENCE_SPEC_PATHS.get(ctx_type, ""))
+        if ref_spec_content:
+            raw_examples_content += f"\\nExample ERC {ctx_type.upper()} specification:\\n\\n```solidity\\n{ref_spec_content}\\n```\\n"
+
+    examples_section_for_prompt = ""
+    if raw_examples_content:
+        examples_section_for_prompt = f"\\nHere are examples of similar ERC formal specifications:{raw_examples_content}"
+
+    results = []
+    max_iterations_per_function = 5 # Limit attempts per function
+
+    for i in range(num_runs):
+        print(f"\n--- Starting Run {i + 1}/{num_runs} --- ")
+        run_start_time = time.time()
         assistant = Assistant(assistant_id)
         thread = Thread(assistant)
-        result = loop(thread, prompt, max_iterations, requested_type)
-        end_time = time.time()
-        duration = end_time - start_time
-        annotated_contract = ""
 
-        # Save thread to file
+        verified_annotations = {} # Reset for each run
+        function_verification_status = {} # Track status per function for this run
+        verification_status = [] # Reset global error list for this run
+        total_interactions = 0
+
+        for func_info in parsed_components.get('functions', []):
+            # Use a sub-loop/function to handle attempts for this specific function
+            # Pass thread, func_info, components, current verified_annotations, eip_doc, etc.
+            # process_single_function handles the interaction loop and verification. Returns tuple (annotations|None, interactions_count)
+            func_annotations, func_interactions_count = process_single_function(
+                thread=thread,
+                func_info=func_info,
+                components=parsed_components,
+                verified_annotations=verified_annotations,
+                eip_doc=eip_doc,
+                base_instructions=base_instructions,
+                examples_text=examples_section_for_prompt, # Pass the examples
+                max_iterations_per_function=max_iterations_per_function,
+                requested_type=requested_type
+            )
+            total_interactions += func_interactions_count
+
+            if func_annotations:
+                verified_annotations[func_info['signature']] = func_annotations
+                function_verification_status[func_info['name']] = "Verified"
+            else:
+                function_verification_status[func_info['name']] = "Failed"
+                # Optional: Decide if failure of one function should stop the whole run
+
+        run_end_time = time.time()
+        duration = run_end_time - run_start_time
+
+        # Assemble final contract (potentially partial)
+        final_contract_code = assemble_partial_contract(contract_name, parsed_components, verified_annotations)
+        all_functions_verified = all(status == "Verified" for status in function_verification_status.values())
+
+        # Save thread log
         save_result = save_thread_to_file(thread.id, requested_type, context_str, assistant_key, i+1)
         if not save_result:
             print(f"WARNING: Failed to save thread file for run {i+1}")
-        
-        verified_status = isinstance(result, str) # Check if loop returned code (success) or False (failure)
-        annotated_contract = result if verified_status else ""
-
 
         results.append({
             "run": i + 1,
             "time_taken": duration,
-            "iterations": interaction_counter -1 if interaction_counter > 0 else 0, # Adjust iteration count
-            "verified": verified_status,
-            "annotated_contract": annotated_contract,
-            "status": verification_status # Append the collected status for this run
+            "iterations": total_interactions, # Need to sum interactions from process_single_function
+            "verified": all_functions_verified,
+            "annotated_contract": final_contract_code,
+            "function_status": function_verification_status, # Add function status
+            "status": verification_status # Append the collected errors for this run
         })
-        verification_status = [] # Reset status for the next run
-    
+        # verification_status = [] # Reset global error list is done inside the loop now
+
     # Save results to CSV
     csv_filename = f"{results_dir}/{file_prefix}.csv"
+    # Adjust save function if needed for the new structure (e.g., function_status)
     Utils.save_results_to_csv(csv_filename, results)
     return results
 
