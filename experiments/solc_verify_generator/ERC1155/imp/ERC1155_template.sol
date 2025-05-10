@@ -87,9 +87,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      *
      * - `accounts` and `ids` must have the same length.
      */
-    /// @notice postcondition batchBalances.length == _owners.length
-    /// @notice postcondition batchBalances.length == _ids.length
-    /// @notice postcondition forall (uint x) !( 0 <= x &&  x < batchBalances.length ) || batchBalances[x] == _balances[_ids[x]][_owners[x]]
+    /// @notice postcondition true
     function balanceOfBatch(
         address[] memory _owners,
         uint256[] memory _ids
@@ -116,7 +114,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     /**
      * @dev See {IERC1155-setApprovalForAll}.
      */
-    ///@notice postcondition _operatorApprovals[msg.sender][_operator] == _approved
+    ///@notice postcondition true
 
     function setApprovalForAll(address _operator, bool _approved) public   {
         require(_msgSender() != _operator);
@@ -125,20 +123,14 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         emit ApprovalForAll(_msgSender(), _operator, _approved);
     }
 
-    ///@notice postcondition _operatorApprovals[_owner][_operator] == approved
+    ///@notice postcondition true
 
     function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
         return _operatorApprovals[_owner][_operator];
     }
 
 
-    /// @notice postcondition _to != address(0)
-    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
-    /// @notice postcondition __verifier_old_uint(_balances[_id][_from]) >= _value    
-    /// @notice postcondition _from == _to || _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - _value
-    /// @notice postcondition _from != _to || _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from])
-    /// @notice postcondition _from == _to || _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value
-    /// @notice postcondition _from != _to || _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to])
+    /// @notice postcondition true
     function safeTransferFrom(
         address _from,
         address _to,
@@ -157,14 +149,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     }
 
     /// @notice precondition forall (uint x, uint y) !(0 <= x && x < _ids.length) || !(0 <= y && y < _ids.length) || x == y || _ids[y] != _ids[x]
-    /// @notice postcondition _operatorApprovals[_from][msg.sender] || _from == msg.sender
-    /// @notice postcondition _to != address(0)
-    /// @notice postcondition _ids.length == _values.length
-    /// @notice postcondition forall (uint x) !(0 <= x && x < _ids.length) || (__verifier_old_uint(_balances[_ids[x]][_from]) >= _values[x])
-    /// @notice postcondition forall (uint x) !(0 <= x && x < _ids.length) || (_from == _to) || (_balances[_ids[x]][_to] == __verifier_old_uint(_balances[_ids[x]][_to]) + _values[x])
-    /// @notice postcondition forall (uint x) _from != _to || _balances[_ids[x]][_to] == __verifier_old_uint(_balances[_ids[x]][_to])
-    /// @notice postcondition forall (uint x) !(0 <= x && x < _ids.length) || (_from == _to) || ( _balances[_ids[x]][_from] == __verifier_old_uint(_balances[_ids[x]][_from]) - _values[x])
-    /// @notice postcondition forall (uint x) _from != _to || _balances[_ids[x]][_from] == __verifier_old_uint(_balances[_ids[x]][_from])
+    /// @notice postcondition true
     function safeBatchTransferFrom(
         address _from,
         address _to,
