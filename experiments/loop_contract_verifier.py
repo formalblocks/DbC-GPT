@@ -77,9 +77,11 @@ INSTRUCTIONS = """
         - You are given a smart contract interface and need to add formal verification conditions for each function using solc-verify syntax (`/// @notice postcondition [condition]`).
         - You MUST use the EIP documentation below to understand the required behavior.
         - Replace `$ADD POSTCONDITION HERE` with appropriate postconditions above each function. Postconditions placed below the function signature are invalid. For instance:
-        ``` /// @notice postcondition condition1\n
-            /// @notice postcondition condition2\n
-            function foo(uint256 bar, address par) public;```
+        ``` 
+        /// @notice postcondition condition1\n
+        /// @notice postcondition condition2\n
+        function foo(uint256 bar, address par) public;
+        ```
 
     Requirements:
         - Ensure conditions correctly represent the expected state changes and return values.

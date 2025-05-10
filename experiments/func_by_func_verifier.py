@@ -42,7 +42,7 @@ ASSISTANT_IDS = {
     # "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
     # "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
     "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
-    "erc-1155-005-3-16": "asst_nsa6edZTsNNWj4SBFSPeFYPq",
+    "erc-1155-005-3-16": "asst_tsqw3GcFG1kyPz9rNkqkIYAU",
     "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
     "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
     "erc-1155-005-5-16": "asst_8ZL8R3zwXyurmmjkFX14kcuS",
@@ -74,22 +74,25 @@ REFERENCE_SPEC_PATHS = {
 
 INSTRUCTIONS = """
     Task:
-        - You are given a smart contract interface and need to add formal verification conditions for each function using solc-verify syntax (`/// @notice postcondition [condition]`).
-        - If provided, use the ERC documentation/EIP to understand the required behavior.
-        - Replace "$ADD POSTCONDITION HERE" with appropriate postconditions above each function.
+        - You are given a smart contract interface and need to add formal postconditions to a function using solc-verify syntax (`/// @notice postcondition condition`). Postconditions must not end with a semicolon (";").
+        - You MUST use the EIP documentation below to understand the required behavior.
+        - Replace `$ADD POSTCONDITION HERE` with appropriate postconditions above each function. Postconditions placed below the function signature are invalid. For instance:
+        ``` /// @notice postcondition condition1\n
+            /// @notice postcondition condition2\n
+            function foo(uint256 bar, address par) public;```
 
     Requirements:
-        - Add comprehensive postconditions for every function based on standard smart contract behaviors and the provided documentation (if any).
         - Ensure conditions correctly represent the expected state changes and return values.
-        - Maintain consistency across related functions.
-
-    Verification Guidelines:
-        - Use ONLY state variables exactly as declared. Referencing undeclared variables will fail if they aren't in the contract.
-        - Use ONLY parameter names exactly as they appear in function signatures (e.g., _to, _from, _value, _id, _ids, _values).
-        - Use `__verifier_old_uint(stateVariable)` or `__verifier_old_bool(stateVariable)` to reference values from the start of the function execution.
         - View functions should relate return values directly to state variables.
-
-    Your task is to annotate this contract with proper solc-verify postconditions:
+        - Postconditions MUST ONLY use state variables exactly as declared. Referencing undeclared variables will fail if they aren't in the contract. For instance, a state variable `uint256 var` can be referenced as `var` only.
+        - Postconditions MUST ONLY use parameter names exactly as they appear in function signatures. For instance, `function foo(uint256 bar,  address par)` has parameter names `bar` and `par` only. 
+        - Use `__verifier_old_uint(stateVariable)` or `__verifier_old_bool(stateVariable)` to reference values from the start of the function execution.
+        - A quantified postcondition MUST start with `forall`. For instance, a quantified postcondition look like `/// @notice postcondition forall (uint x) condition`. Without the `forall` at the beginning, the postcondition is invalid.
+        - YOU MUST SPECIFY THE RANGE when postconditions quantify over arrays. For example, for array `arr` a postcondition quantification would look like `/// @notice postcondition forall (uint i) !(0 <= i && i < arr.length) || condition`. Without the range, the postcondition is likely to be invalid.
+        - The implication operator "==>" is not valid in solc-verify notation, so it must appear NOWHERE in a postcondition. For instance, a postcondition of the form `/// @notice postcondition condition1 ==> condition2` is invalid. Similarly, a postcondition of the form `/// @notice postcondition (forall uint x) condition1 ==> condition2` is also invalid. You can use instead the notation `!(condition) || condition2` to simulate the implication operator. For instance, `/// @notice postcondition (forall uint x) condition1 ==> condition2` can be written as `/// @notice postcondition !(condition1) || condition2`.
+   
+    
+    Your task is to annotate the function in the contract below:
 """
 
 # Initialize the global counter
@@ -468,42 +471,6 @@ def load_target_interface(requested_type):
         return Utils.extract_content_from_markdown(INTERFACE_PATHS[requested_type])
     return None
 
-def generate_prompt(requested_type, context_types):
-    """
-    Generate the prompt with examples based on the requested type and context types
-    """
-    # Load the target interface and eip document
-    target_interface = load_target_interface(requested_type)
-    eip_doc = Utils.extract_content_from_markdown(EIP_PATHS.get(requested_type, ""))
-    
-    # Build examples section from context types
-    examples_text = ""
-    for ctx_type in context_types:
-        # Skip empty context
-        if not ctx_type:
-            continue
-        
-        ref_spec = Utils.extract_content_from_markdown(REFERENCE_SPEC_PATHS[ctx_type])
-        if ref_spec:
-            examples_text += f"\nExample ERC {ctx_type.upper()} specification:\n\n```solidity\n{ref_spec}\n```\n"
-    
-    # Build the prompt
-    prompt = f"""
-    {INSTRUCTIONS}
-    
-    ```solidity
-    {target_interface}
-    ```
-    """
-    
-    if examples_text:
-        prompt += f"\nHere are examples of similar ERC formal specifications:{examples_text}"
-    
-    if eip_doc:
-        prompt += f"\nEIP {requested_type.upper()} markdown below:\n\n<eip>\n{eip_doc}\n</eip>\n"
-    
-    return prompt
-
 def assemble_partial_contract(contract_name: str, components: dict, current_annotations: dict, target_func_sig: str = None):
     """Assembles a partial contract string for verification."""
     code = f"pragma solidity >= 0.5.0;\n\ncontract {contract_name} {{\n\n"
@@ -527,11 +494,10 @@ def assemble_partial_contract(contract_name: str, components: dict, current_anno
         annotations = current_annotations.get(func_sig)
         if annotations:
             # Add existing/verified annotations
-            for line in annotations.strip().split('\n'):
+            for line in annotations.split('\n'):
                  code += f"    {line}\n"
         elif func_sig == target_func_sig:
              # Placeholder for the function being actively verified if its annotations aren't ready
-             # This case might not be needed if we always add proposed annotations before verifying
              pass # Annotations will be added just before verification call
         else:
             # Add placeholder for functions not yet processed or failed
@@ -543,44 +509,57 @@ def assemble_partial_contract(contract_name: str, components: dict, current_anno
     return code
 
 def extract_annotations_for_function(llm_response: str, target_func_sig: str):
-    """Extracts annotations intended for a specific function signature from LLM response."""
-    # Try extracting the code block first
-    code_block = Utils.extract_solidity_code(llm_response)
-    search_text = code_block if code_block else llm_response
+    """
+    Extracts annotations from an LLM response.
+    The LLM response might include a complete contract snippet, markdown, etc.
+    This function will extract ONLY the lines starting with "///" or "/*".
+    Trailing semicolons on annotation lines are removed.
+    """
 
-    # Regex to find annotations directly above the target function signature
-    # This looks for lines starting with /// or /* until it hits the function definition
-    pattern_str = rf"((?:(?:///.*|/\\*.*?\\*/)\\n)+\\s*){re.escape(target_func_sig)}"
-    match = re.search(pattern_str, search_text, re.MULTILINE | re.DOTALL)
-
-    raw_annotations_str = None
-    if match:
-        raw_annotations_str = match.group(1).strip()
-    else:
-        # Fallback: Maybe the LLM just returned the annotations? Look for lines starting with ///
-        lines = search_text.strip().split('\\n')
-        annotation_lines = [line for line in lines if line.strip().startswith(("///", "/*"))]
-        if annotation_lines:
-            raw_annotations_str = "\\n".join(annotation_lines)
-
-    if raw_annotations_str:
-        processed_lines = []
-        for line in raw_annotations_str.split('\\n'):
-            stripped_line = line.rstrip() # Remove trailing whitespace first
-            if stripped_line.endswith(';'):
-                processed_lines.append(stripped_line[:-1])
-            else:
-                processed_lines.append(stripped_line)
-        return "\\n".join(processed_lines)
-    else: # This 'else' corresponds to 'if raw_annotations_str'
-        logging.warning(f"Could not extract annotations for {target_func_sig} from response.")
+    if not llm_response or not llm_response.strip():
+        logging.warning(f"LLM response for {target_func_sig} is empty or whitespace.")
         return None
+
+    processed_llm_response = llm_response.strip()
+    
+    # First, check if the response contains a markdown code block
+    code_block_match = re.search(r"```(?:solidity)?\s*(.*?)```", processed_llm_response, re.DOTALL)
+    if code_block_match:
+        # Extract the content inside the code block
+        content_to_process = code_block_match.group(1).strip()
+    else:
+        # No code block found, process the entire response
+        content_to_process = processed_llm_response
+        logging.info("No markdown code block found, processing entire response")
+    
+    # Split the content into lines (whether it came from a code block or not)
+    all_lines = content_to_process.split('\n')
+    
+    # Only collect lines that start with /// or /*
+    annotation_lines = []
+    for line in all_lines:
+        stripped_line = line.strip()  # Remove leading/trailing whitespace
+        
+        if stripped_line.startswith("///") or stripped_line.startswith("/*"):
+            # Remove any trailing semicolon
+            if stripped_line.endswith(';'):
+                annotation_lines.append(stripped_line[:-1])
+            else:
+                annotation_lines.append(stripped_line)
+    
+    if not annotation_lines:
+        logging.warning(f"No annotation lines found in the response for {target_func_sig}")
+        return None
+    
+    # Join the processed annotation lines with newlines
+    final_annotations_str = "\n".join(annotation_lines)
+    return final_annotations_str
 
 def process_single_function(thread: Thread, func_info: dict, components: dict, verified_annotations: dict, eip_doc: str, base_instructions: str, examples_text: str, max_iterations_per_function: int, requested_type: str):
     """Tries to generate and verify annotations for a single function."""
     func_sig = func_info['signature']
     func_name = func_info['name']
-    contract_name = "ERC_Contract_Placeholder" # Or extract from components if available
+    contract_name = requested_type.upper()
     logging.info(f"Processing function: {func_name} ({func_sig})")
 
     # Track interactions within this function context
@@ -592,42 +571,86 @@ def process_single_function(thread: Thread, func_info: dict, components: dict, v
     state_vars_str = "\n".join(components.get('state_vars', []))
     events_str = "\n".join(components.get('events', []))
 
-    current_prompt = f"""
-{base_instructions}
-{examples_text}
+    # Extract EIP snippet specific to the current function
+    specific_eip_snippet = "No specific EIP segment found for this function."
+    if eip_doc and func_name:
+        # Regex to find the Javadoc-style comment and the function signature for the specific function name
+        # It captures the comment block and the function line associated with func_name
+        pattern = rf"(/\*\*(?:[^*]|\*(?!/))*?\*/\s*function\s+{re.escape(func_name)}\s*\(.*\).*?;)"
+        match = re.search(pattern, eip_doc, re.DOTALL)
+        if match:
+            specific_eip_snippet = match.group(1).strip()
 
-**Contract Context:**
-State Variables:
+    # Indent state variables for placement within the contract block - do this BEFORE checking for function-specific files
+    indented_state_vars = "\n".join([f"    {var}" for var in components.get('state_vars', [])])
+
+    # Check for a function-specific markdown file
+    func_md_path = f"../assets/file_search/{requested_type.lower()}/{func_name}.md"
+    print("MD PATH", func_md_path)
+    func_md_content = ""
+    try:
+        with open(func_md_path, 'r') as f:
+            func_md_content = f.read().strip()
+            print("MD CONTENT", func_md_content)
+        logging.info(f"Found function-specific file for {func_name} at {func_md_path}")
+    except:
+        logging.info(f"No function-specific file found for {func_name} at {func_md_path}")
+        # We already defined indented_state_vars above, so we don't need to do it again here
+
+    # Format the current prompt based on whether we have a function-specific markdown file
+    if func_md_content:
+        print("FOUND FUNCTION-SPECIFIC FILE")
+        current_prompt = f"""{base_instructions}
+
+**Current Task:**
+Generate *only* the `/// @notice postcondition ...` annotations that should replace the `$ADD POSTCONDITION HERE` placeholder in the following function. Do not include the function signature or any other text in your response.
+
 ```solidity
-{state_vars_str}
+pragma solidity >= 0.5.0;
+
+contract {contract_name} {{
+{indented_state_vars}
+
+{func_md_content}
+}}
 ```
-Events:
-```solidity
-{events_str}
-```
-Previously Verified Function Annotations (for consistency):
-```solidity
-{verified_ann_str}
-```
+
+EIP Documentation Snippet (if relevant to `{func_name}`):
+<eip>
+{specific_eip_snippet}
+</eip>"""
+    else:
+        print("NO FUNCTION-SPECIFIC FILE FOUND")
+        # Use the original formatting as a fallback
+        # indented_state_vars is already defined above, so we can remove this line
+        current_prompt = f"""{base_instructions}
 
 **Current Task:**
 Generate *only* the `/// @notice postcondition ...` annotations for the following function signature. Do not include the function signature itself in your response, only the annotation lines.
 
 ```solidity
+pragma solidity >= 0.5.0;
+
+contract {contract_name} {{
+{indented_state_vars}
+
 {func_sig}
+}}
 ```
 
-EIP Documentation Snippet (if relevant):
+EIP Documentation Snippet (if relevant to `{func_name}`):
 <eip>
-{eip_doc}
-</eip>
-"""
+{specific_eip_snippet}
+</eip>"""
+
+    if examples_text:
+        current_prompt += f"\n**Examples:**\n{examples_text}"
 
     for attempt in range(max_iterations_per_function):
         logging.info(f"Attempt {attempt + 1}/{max_iterations_per_function} for function {func_name}")
         interaction: Interaction = thread.send_message(current_prompt)
         response = interaction.await_for_response()
-        func_interactions += 1 # Increment interaction count
+        func_interactions += 1
 
         proposed_annotations = extract_annotations_for_function(response, func_sig)
 
@@ -702,32 +725,15 @@ EIP Documentation Snippet (if relevant):
             logging.warning(f"Verification failed for function {func_name} (Attempt {attempt + 1}). Error: {error_output[:500]}...")
             # Simple feedback for now, could be enhanced to check if error is specific to the current function
             current_prompt = f"""
-                Verification failed for function `{func_sig}` with your proposed annotations:
+            Verification failed for function `{func_sig}` with your proposed annotations:
 
-                **Your Proposed Annotations:**
-                ```solidity
-                {proposed_annotations}
-                ```
+            The verifier found the following errors:
+            ```
+            {error_output}
+            ```
 
-                **Verification Output (Errors):**
-                ```
-                {error_output}
-                ```
-
-                **Task:**
-                {INSTRUCTIONS}
-
-                **Contract Context Reminder:**
-                State Variables: {components.get('state_vars', [])}
-                Previously Verified Annotations: {list(verified_annotations.keys())}
-                Function Signature: `{func_sig}`
-                {examples_text} # Add examples to feedback prompt as well
-                EIP Documentation Snippet (if relevant):
-                <eip>
-                {eip_doc}
-                </eip>
-                """
-            # Continue loop with the feedback prompt
+            Can you fix the specification accordingly?
+            """
 
     logging.error(f"Failed to verify annotations for function {func_name} after {max_iterations_per_function} attempts.")
     return None, func_interactions # Failed after max attempts
@@ -758,11 +764,11 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
     if not parsed_components['functions']:
         raise ValueError("No functions found in the interface file.")
 
-    contract_name = "ERC_Contract_Placeholder" # TODO: Extract name if possible
+    contract_name = requested_type.upper()
 
     eip_doc = Utils.extract_content_from_markdown(EIP_PATHS.get(requested_type, ""))
-    # Note: Examples are not used directly in the per-function prompt for now, but base_instructions remain.
-    base_instructions = INSTRUCTIONS # Use the globally defined instructions
+
+    base_instructions = INSTRUCTIONS
 
     # Generate example texts (reference specifications) based on context_types
     raw_examples_content = ""
@@ -772,14 +778,14 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
         
         ref_spec_content = Utils.extract_content_from_markdown(REFERENCE_SPEC_PATHS.get(ctx_type, ""))
         if ref_spec_content:
-            raw_examples_content += f"\\nExample ERC {ctx_type.upper()} specification:\\n\\n```solidity\\n{ref_spec_content}\\n```\\n"
+            raw_examples_content += f"\nExample ERC {ctx_type.upper()} specification:\n\n```solidity\n{ref_spec_content}\n```\n"
 
     examples_section_for_prompt = ""
     if raw_examples_content:
-        examples_section_for_prompt = f"\\nHere are examples of similar ERC formal specifications:{raw_examples_content}"
+        examples_section_for_prompt = f"\nHere are examples of similar ERC formal specifications:{raw_examples_content}"
 
     results = []
-    max_iterations_per_function = 5 # Limit attempts per function
+    max_iterations_per_function = 10 # Limit attempts per function
 
     for i in range(num_runs):
         print(f"\n--- Starting Run {i + 1}/{num_runs} --- ")
@@ -831,7 +837,7 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
         results.append({
             "run": i + 1,
             "time_taken": duration,
-            "iterations": total_interactions, # Need to sum interactions from process_single_function
+            "iterations": total_interactions,
             "verified": all_functions_verified,
             "annotated_contract": final_contract_code,
             "function_status": function_verification_status, # Add function status
