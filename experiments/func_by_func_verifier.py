@@ -33,7 +33,6 @@ ASSISTANT_IDS = {
     # "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
     # "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
     # "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
-    "4o-mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
     # "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
     # "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
     # "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
@@ -41,6 +40,7 @@ ASSISTANT_IDS = {
     # "erc20-721-4-o-mini": "asst_6o09ITzVveX37WwyVz42KhrY",
     # "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
     # "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
+    "4o-mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
     "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
     "erc-1155-005-3-16": "asst_tsqw3GcFG1kyPz9rNkqkIYAU",
     "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
@@ -77,9 +77,11 @@ INSTRUCTIONS = """
         - You are given a smart contract interface and need to add formal postconditions to a function using solc-verify syntax (`/// @notice postcondition condition`). Postconditions must not end with a semicolon (";").
         - You MUST use the EIP documentation below to understand the required behavior.
         - Replace `$ADD POSTCONDITION HERE` with appropriate postconditions above each function. Postconditions placed below the function signature are invalid. For instance:
-        ``` /// @notice postcondition condition1\n
-            /// @notice postcondition condition2\n
-            function foo(uint256 bar, address par) public;```
+        ``` 
+        /// @notice postcondition condition1\n
+        /// @notice postcondition condition2\n
+        function foo(uint256 bar, address par) public;
+        ```
 
     Requirements:
         - Ensure conditions correctly represent the expected state changes and return values.
@@ -141,9 +143,6 @@ def parse_solidity_interface(solidity_code: str):
         components['functions'].append({'signature': signature.strip(), 'name': func_dict['name']})
 
     logging.info(f"Parsed components: {len(components['state_vars'])} state vars, {len(components['events'])} events, {len(components['functions'])} functions.")
-    # Log extracted functions for debugging
-    # for func in components['functions']:
-    #     logging.debug(f"Found function: {func['signature']}")
 
     return components
 
@@ -511,49 +510,23 @@ def assemble_partial_contract(contract_name: str, components: dict, current_anno
 def extract_annotations_for_function(llm_response: str, target_func_sig: str):
     """
     Extracts annotations from an LLM response.
-    The LLM response might include a complete contract snippet, markdown, etc.
-    This function will extract ONLY the lines starting with "///" or "/*".
+    This function will extract ONLY the lines starting with "@notice postcondition".
     Trailing semicolons on annotation lines are removed.
     """
 
     if not llm_response or not llm_response.strip():
-        logging.warning(f"LLM response for {target_func_sig} is empty or whitespace.")
+        print(f"LLM response for {target_func_sig} is empty or whitespace.")
         return None
 
     processed_llm_response = llm_response.strip()
     
-    # First, check if the response contains a markdown code block
-    code_block_match = re.search(r"```(?:solidity)?\s*(.*?)```", processed_llm_response, re.DOTALL)
-    if code_block_match:
-        # Extract the content inside the code block
-        content_to_process = code_block_match.group(1).strip()
-    else:
-        # No code block found, process the entire response
-        content_to_process = processed_llm_response
-        logging.info("No markdown code block found, processing entire response")
+    # Only collect lines that contain @notice postcondition
+    postcondition_lines = [line.strip().rstrip(";") for line in processed_llm_response.split('\n') if "@notice postcondition" in line.strip()]
     
-    # Split the content into lines (whether it came from a code block or not)
-    all_lines = content_to_process.split('\n')
-    
-    # Only collect lines that start with /// or /*
-    annotation_lines = []
-    for line in all_lines:
-        stripped_line = line.strip()  # Remove leading/trailing whitespace
-        
-        if stripped_line.startswith("///") or stripped_line.startswith("/*"):
-            # Remove any trailing semicolon
-            if stripped_line.endswith(';'):
-                annotation_lines.append(stripped_line[:-1])
-            else:
-                annotation_lines.append(stripped_line)
-    
-    if not annotation_lines:
-        logging.warning(f"No annotation lines found in the response for {target_func_sig}")
-        return None
-    
-    # Join the processed annotation lines with newlines
-    final_annotations_str = "\n".join(annotation_lines)
+    # Join the postcondition lines with newlines
+    final_annotations_str = "\n".join(postcondition_lines)
     return final_annotations_str
+    
 
 def process_single_function(thread: Thread, func_info: dict, components: dict, verified_annotations: dict, eip_doc: str, base_instructions: str, examples_text: str, max_iterations_per_function: int, requested_type: str):
     """Tries to generate and verify annotations for a single function."""
@@ -586,12 +559,10 @@ def process_single_function(thread: Thread, func_info: dict, components: dict, v
 
     # Check for a function-specific markdown file
     func_md_path = f"../assets/file_search/{requested_type.lower()}/{func_name}.md"
-    print("MD PATH", func_md_path)
     func_md_content = ""
     try:
         with open(func_md_path, 'r') as f:
             func_md_content = f.read().strip()
-            print("MD CONTENT", func_md_content)
         logging.info(f"Found function-specific file for {func_name} at {func_md_path}")
     except:
         logging.info(f"No function-specific file found for {func_name} at {func_md_path}")
@@ -600,10 +571,8 @@ def process_single_function(thread: Thread, func_info: dict, components: dict, v
     # Format the current prompt based on whether we have a function-specific markdown file
     if func_md_content:
         print("FOUND FUNCTION-SPECIFIC FILE")
-        current_prompt = f"""{base_instructions}
-
-**Current Task:**
-Generate *only* the `/// @notice postcondition ...` annotations that should replace the `$ADD POSTCONDITION HERE` placeholder in the following function. Do not include the function signature or any other text in your response.
+        current_prompt = f"""
+{base_instructions}
 
 ```solidity
 pragma solidity >= 0.5.0;
@@ -618,15 +587,13 @@ contract {contract_name} {{
 EIP Documentation Snippet (if relevant to `{func_name}`):
 <eip>
 {specific_eip_snippet}
-</eip>"""
+</eip>
+"""
     else:
         print("NO FUNCTION-SPECIFIC FILE FOUND")
         # Use the original formatting as a fallback
-        # indented_state_vars is already defined above, so we can remove this line
-        current_prompt = f"""{base_instructions}
-
-**Current Task:**
-Generate *only* the `/// @notice postcondition ...` annotations for the following function signature. Do not include the function signature itself in your response, only the annotation lines.
+        current_prompt = f"""
+{base_instructions}
 
 ```solidity
 pragma solidity >= 0.5.0;
@@ -641,7 +608,8 @@ contract {contract_name} {{
 EIP Documentation Snippet (if relevant to `{func_name}`):
 <eip>
 {specific_eip_snippet}
-</eip>"""
+</eip>
+"""
 
     if examples_text:
         current_prompt += f"\n**Examples:**\n{examples_text}"
@@ -673,59 +641,25 @@ EIP Documentation Snippet (if relevant to `{func_name}`):
             )
         except Exception as e:
             logging.error(f"Verification failed for {func_name} with exception: {e}")
-            # Decide how to handle exceptions during verification - maybe retry or fail the function
-            return None, func_interactions # Fail this function for now
+            return None, func_interactions
 
         # --- Verification Result Analysis --- 
         verification_passed = False
         error_output = verification_result.output
 
-        if verification_result.status == 0:
-            verification_passed = True
+        if verification_result.status != 0:
+            error_output = verification_result.output
+            verification_passed = False
         else:
-            # Status is non-zero, check if it's just benign warnings
-            lines = error_output.strip().split('\n')
-            # Filter out known benign warnings (adjust patterns as needed)
-            benign_warning_patterns = [
-                r'Warning: Unused function parameter',
-                r'Warning: Unused local variable',
-                r'Warning: Function state mutability can be restricted',
-                r'Warning: This is a pre-release compiler version'
-            ]
-            # Check for actual solc-verify errors or unknown warnings
-            critical_errors = []
-            for line in lines:
-                is_benign = False
-                for pattern in benign_warning_patterns:
-                    if re.search(pattern, line):
-                        is_benign = True
-                        break
-                if not is_benign and line.strip(): # Ignore empty lines
-                    # Check specifically for solc-verify errors mentioning the current function
-                    # This check might need refinement based on actual solc-verify error formats
-                    if f"::{func_name}:" in line or f"Annotation for {func_name}" in line or "solc-verify error:" in line:
-                         critical_errors.append(line)
-                    # Consider other patterns that indicate a real problem
-
-            if not critical_errors:
-                logging.warning(f"Verification status non-zero, but only benign warnings detected for {func_name}. Treating as success.")
-                verification_passed = True
-            else:
-                logging.warning(f"Verification failed for {func_name} with critical errors/warnings:")
-                for err_line in critical_errors:
-                    logging.warning(f"  - {err_line}")
-        # --- End Verification Result Analysis ---
+            verification_passed = True
 
         if verification_passed:
             logging.info(f"Successfully verified annotations for function {func_name}.")
-            return proposed_annotations, func_interactions # Success!
+            return proposed_annotations, func_interactions
         else:
-            # Verification failed with critical errors, construct feedback
-            # error_output = verification_result.output # Already have this
             logging.warning(f"Verification failed for function {func_name} (Attempt {attempt + 1}). Error: {error_output[:500]}...")
-            # Simple feedback for now, could be enhanced to check if error is specific to the current function
             current_prompt = f"""
-            Verification failed for function `{func_sig}` with your proposed annotations:
+            Verification failed for function `{func_sig}`
 
             The verifier found the following errors:
             ```
