@@ -54,6 +54,7 @@ def generate_merge(spec: str, imp_template: str, merge_file_path: str, prefix: s
     result = call_solc(spec)
     if result.returncode:
         # Something has gone wrong compiling the solidity code
+        print("Something has gone wrong compiling the solidity code")
         raise RuntimeError(result.returncode, result.stdout + result.stderr)
     annotations, state_variables = parse_ast()
     process_annotations(annotations, state_variables, prefix)
