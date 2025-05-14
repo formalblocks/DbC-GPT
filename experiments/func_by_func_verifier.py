@@ -57,18 +57,21 @@ INTERFACE_PATHS = {
     "erc20": "../assets/file_search/erc20_interface.md",
     "erc721": "../assets/file_search/erc721_interface.md",
     "erc1155": "../assets/file_search/erc1155_interface.md",
+    "erc123": "../assets/file_search/erc123_interface.md",
 }
 
 EIP_PATHS = {
     "erc20": "../assets/file_search/erc-20.md",
     "erc721": "../assets/file_search/erc-721.md",
     "erc1155": "../assets/file_search/erc-1155.md",
+    "erc123": "../assets/file_search/erc-123.md",
 }
 
 REFERENCE_SPEC_PATHS = {
     "erc20": "../assets/file_search/erc20_ref_spec.md",
     "erc721": "../assets/file_search/erc721_ref_spec.md",
     "erc1155": "../assets/file_search/erc1155_ref_spec.md",
+    "erc123": "../assets/file_search/erc123_ref_spec.md",
     "": ""
 }
 
@@ -348,6 +351,7 @@ class SolcVerifyWrapper:
         "erc20": './solc_verify_generator/ERC20/templates/imp_spec_merge.template',
         "erc721": './solc_verify_generator/ERC721/templates/imp_spec_merge.template',
         "erc1155": './solc_verify_generator/ERC1155/templates/imp_spec_merge.template',
+        "erc123": './solc_verify_generator/ERC123/templates/imp_spec_merge.template',
     }
     
     # Merge paths for different ERC standards
@@ -355,6 +359,7 @@ class SolcVerifyWrapper:
         "erc20": './solc_verify_generator/ERC20/imp/ERC20_merge.sol',
         "erc721": './solc_verify_generator/ERC721/imp/ERC721_merge.sol',
         "erc1155": './solc_verify_generator/ERC1155/imp/ERC1155_merge.sol',
+        "erc123": './solc_verify_generator/ERC123/imp/ERC123_merge.sol',
     }
 
     @classmethod
@@ -384,7 +389,7 @@ class SolcVerifyWrapper:
         Utils.save_string_to_file(cls.SPEC_FILE_PATH, soldity_spec_str)
         from solc_verify_generator.main import generate_merge
         try:
-            print("GENERATING MERGE", cls.SPEC_FILE_PATH, template_path, merge_path)
+            print("GENERATING MERGE")
             generate_merge(cls.SPEC_FILE_PATH, template_path, merge_path)
         except RuntimeError as e:
             return VerificationResult(*e.args)
@@ -572,44 +577,45 @@ def process_single_function(thread: Thread, func_info: dict, components: dict, v
     if func_md_content:
         print("FOUND FUNCTION-SPECIFIC FILE")
         current_prompt = f"""
-{base_instructions}
+        
+        {base_instructions}
 
-```solidity
-pragma solidity >= 0.5.0;
+        ```solidity
+        pragma solidity >= 0.5.0;
 
-contract {contract_name} {{
-{indented_state_vars}
+        contract {contract_name} {{
+        {indented_state_vars}
 
-{func_md_content}
-}}
-```
+        {func_md_content}
+        }}
+        ```
 
-EIP Documentation Snippet (if relevant to `{func_name}`):
-<eip>
-{specific_eip_snippet}
-</eip>
-"""
+        EIP Documentation Snippet (if relevant to `{func_name}`):
+        <eip>
+        {specific_eip_snippet}
+        </eip>
+        """
     else:
         print("NO FUNCTION-SPECIFIC FILE FOUND")
         # Use the original formatting as a fallback
         current_prompt = f"""
-{base_instructions}
+        {base_instructions}
 
-```solidity
-pragma solidity >= 0.5.0;
+        ```solidity
+        pragma solidity >= 0.5.0;
 
-contract {contract_name} {{
-{indented_state_vars}
+        contract {contract_name} {{
+        {indented_state_vars}
 
-{func_sig}
-}}
-```
+        {func_sig}
+        }}
+        ```
 
-EIP Documentation Snippet (if relevant to `{func_name}`):
-<eip>
-{specific_eip_snippet}
-</eip>
-"""
+        EIP Documentation Snippet (if relevant to `{func_name}`):
+        <eip>
+        {specific_eip_snippet}
+        </eip>
+        """
 
     if examples_text:
         current_prompt += f"\n**Examples:**\n{examples_text}"
@@ -724,18 +730,20 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
     for i in range(num_runs):
         print(f"\n--- Starting Run {i + 1}/{num_runs} --- ")
         run_start_time = time.time()
-        assistant = Assistant(assistant_id)
-        thread = Thread(assistant)
-
+        
         verified_annotations = {} # Reset for each run
         function_verification_status = {} # Track status per function for this run
         verification_status = [] # Reset global error list for this run
         total_interactions = 0
+        threads_info = [] # Store thread info for logging
 
         for func_info in parsed_components.get('functions', []):
-            # Use a sub-loop/function to handle attempts for this specific function
-            # Pass thread, func_info, components, current verified_annotations, eip_doc, etc.
-            # process_single_function handles the interaction loop and verification. Returns tuple (annotations|None, interactions_count)
+            # Create a new thread for each function
+            assistant = Assistant(assistant_id)
+            thread = Thread(assistant)
+            threads_info.append((func_info['name'], thread.id))
+            
+            # Process the function with its own dedicated thread
             func_annotations, func_interactions_count = process_single_function(
                 thread=thread,
                 func_info=func_info,
@@ -754,7 +762,11 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
                 function_verification_status[func_info['name']] = "Verified"
             else:
                 function_verification_status[func_info['name']] = "Failed"
-                # Optional: Decide if failure of one function should stop the whole run
+            
+            # Save individual thread log for this function
+            thread_save_result = save_thread_to_file(thread.id, requested_type, f"{context_str}_{func_info['name']}", assistant_key, i+1)
+            if not thread_save_result:
+                print(f"WARNING: Failed to save thread file for function {func_info['name']} in run {i+1}")
 
         run_end_time = time.time()
         duration = run_end_time - run_start_time
@@ -763,10 +775,8 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
         final_contract_code = assemble_partial_contract(contract_name, parsed_components, verified_annotations)
         all_functions_verified = all(status == "Verified" for status in function_verification_status.values())
 
-        # Save thread log
-        save_result = save_thread_to_file(thread.id, requested_type, context_str, assistant_key, i+1)
-        if not save_result:
-            print(f"WARNING: Failed to save thread file for run {i+1}")
+        # Log information about all threads used in this run
+        print(f"Run {i+1} used {len(threads_info)} threads: {', '.join([f'{name}:{tid}' for name, tid in threads_info])}")
 
         results.append({
             "run": i + 1,
@@ -775,9 +785,9 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
             "verified": all_functions_verified,
             "annotated_contract": final_contract_code,
             "function_status": function_verification_status, # Add function status
-            "status": verification_status # Append the collected errors for this run
+            "status": verification_status, # Append the collected errors for this run
+            "threads": [tid for _, tid in threads_info] # Store thread IDs
         })
-        # verification_status = [] # Reset global error list is done inside the loop now
 
     # Save results to CSV
     csv_filename = f"{results_dir}/{file_prefix}.csv"
@@ -788,10 +798,10 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
 def main():
     parser = argparse.ArgumentParser(description='Run contract verification with different contexts')
     parser.add_argument('--requested', type=str, required=True, 
-                        choices=['erc20', 'erc721', 'erc1155'],
+                        choices=['erc20', 'erc721', 'erc1155', 'erc123'],
                         help='The contract type to verify')
     parser.add_argument('--context', type=str, required=True,
-                        help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155")')
+                        help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155,erc123")')
     parser.add_argument('--assistant', type=str, default='4o-mini',
                         choices=['4o-mini', 'erc-1155-001-3-16', 'erc-1155-005-3-16', 'erc-1155-010-3-16', 'erc-1155-001-5-16', 'erc-1155-005-5-16', 'erc-1155-010-5-16', 'erc-1155-001-7-16', 'erc-1155-005-7-16', 'erc-1155-001-7-16'],
                         help='The assistant to use')
