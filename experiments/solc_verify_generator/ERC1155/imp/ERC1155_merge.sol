@@ -107,7 +107,8 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * @dev See {IERC1155-setApprovalForAll}.
      */
     
-    /// @notice postcondition isApprovedForAll(msg.sender, _operator) == _approved
+    ///@notice postcondition true
+
     function setApprovalForAll(address _operator, bool _approved) public   {
         require(_msgSender() != _operator);
 
@@ -115,14 +116,14 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         emit ApprovalForAll(_msgSender(), _operator, _approved);
     }
 
-    /// @notice postcondition true
+    ///@notice postcondition forall (address addr) !(addr == _owner) || approved == __verifier_old_bool(approved)
 
     function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
         return _operatorApprovals[_owner][_operator];
     }
 
 
-    /// @notice postcondition true
+    ///@notice postcondition true
 
     function safeTransferFrom(
         address _from,
@@ -141,7 +142,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         _safeTransferFrom(_from, _to, _id, _value, _data);
     }
 
-    ///@notice postcondition true
+    /// @notice precondition forall (uint x, uint y) !(0 <= x && x < _ids.length) || !(0 <= y && y < _ids.length) || x == y || _ids[y] != _ids[x]
+    ///@notice postcondition forall (uint i) !(0 <= i && i < _ids.length) || (balanceOf(_to, _ids[i]) == __verifier_old_uint(balanceOf(_to, _ids[i])) + _values[i])
+/// @notice postcondition forall (uint j) !(0 <= j && j < _ids.length) || (_from == _to) || (balanceOf(_from, _ids[j]) == __verifier_old_uint(balanceOf(_from, _ids[j])) - _values[j])
 
     function safeBatchTransferFrom(
         address _from,

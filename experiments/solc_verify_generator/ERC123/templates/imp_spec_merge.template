@@ -1,0 +1,84 @@
+pragma solidity ^0.5.0;
+
+contract ERC123Identity {
+
+    
+    address public owner;
+    address public trustedVerifier;
+
+    constructor() public {
+        owner = msg.sender;
+    }
+
+    struct Identity {
+        address owner;
+        address dataHash;
+        bool verified;
+    }
+
+    mapping(bytes32 => Identity) private identities;
+    mapping(address => mapping(bytes32 => bool)) private consents;
+
+    event IdentityCreated(address indexed owner, bytes32 identityId);
+    event IdentityUpdated(address indexed owner, bytes32 identityId);
+    event IdentityVerified(address indexed owner, bytes32 identityId, bool verified);
+    event ConsentGiven(address indexed owner, address indexed caller, bytes32 identityId);
+    event ConsentRevoked(address indexed owner, address indexed caller, bytes32 identityId);
+
+    $createIdentity
+    function createIdentity(bytes32 identityId) external {
+        require(identities[identityId].owner == address(0), "Identity already exists");
+        identities[identityId] = Identity({
+            owner: msg.sender,
+            dataHash: address(0),
+            verified: false
+        });
+        emit IdentityCreated(msg.sender, identityId);
+    }
+
+    $updateIdentity
+    function updateIdentity(bytes32 identityId, address newDataHash) external {
+        require(identities[identityId].owner == msg.sender || consents[msg.sender][identityId], "Not authorized to update the identity");
+        require(identities[identityId].dataHash != newDataHash, "Identity already up to date");
+        identities[identityId].dataHash = newDataHash;
+        identities[identityId].verified = false;
+        emit IdentityUpdated(msg.sender, identityId);
+    }
+
+    $verifyIdentity
+    function verifyIdentity(bytes32 identityId) external view returns (bool ret) {
+        return identities[identityId].verified;
+    }
+
+    $giveConsent
+    function giveConsent(address caller, bytes32 identityId) external {
+        require(identities[identityId].owner == msg.sender, "Not the owner of the identity");
+        consents[caller][identityId] = true;
+        emit ConsentGiven(msg.sender, caller, identityId);
+    }
+
+    $revokeConsent
+    function revokeConsent(address caller, bytes32 identityId) external {
+        require(identities[identityId].owner == msg.sender, "Not the owner of the identity");
+        consents[caller][identityId] = false;
+        emit ConsentRevoked(msg.sender, caller, identityId);
+    }
+
+    $hasConsent
+    function hasConsent(address caller, bytes32 identityId) external view returns (bool ret) {
+        return consents[caller][identityId];
+    }
+
+    $verifyIdentityByTrustedVerifier
+    function verifyIdentityByTrustedVerifier(bytes32 identityId, bool verified) external {
+        require(msg.sender == trustedVerifier, "Not a trusted verifier");
+        identities[identityId].verified = verified;
+        emit IdentityVerified(identities[identityId].owner, identityId, verified);
+    }
+
+    function setTrustedVerifier(address verifier) external {
+        require(msg.sender == owner, "Not the owner");
+        trustedVerifier = verifier;
+    }
+
+}
