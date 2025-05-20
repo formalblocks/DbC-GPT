@@ -1,3 +1,9 @@
+// Mapping from token ID to account balances
+mapping (uint256 => mapping(address => uint256)) private _balances;
+
+// Mapping from account to operator approvals
+mapping (address => mapping(address => bool)) private _operatorApprovals;
+
 /**
     @notice Get the balance of multiple account/token pairs
     @param _owners The addresses of the token holders
