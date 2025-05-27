@@ -4,14 +4,17 @@ import argparse
 import os
 
 SPECIFIC_JOBS_TO_RUN = [
-    ("4o-mini", "erc1155", ""),
-    ("erc-20-001-5-16", "erc1155", ""),
+    # ("4o-mini", "erc1155", ""),
+    # ("erc-20-001-5-16", "erc1155", ""),
     ("erc-721-001-5-16", "erc1155", ""),
-    ("erc-1155-001-5-16", "erc1155", ""),
+    # ("erc-1155-001-5-16", "erc1155", ""),
     ("erc-20-721-001-5-16", "erc1155", ""),
     ("erc-20-1155-001-5-16", "erc1155", ""),
     ("erc-721-1155-001-5-16", "erc1155", ""),
-    ("erc-20-721-1155-001-5-16", "erc1155", "")
+    ("erc-20-721-1155-001-5-16", "erc1155", ""),
+    ("erc-1155-001-3-16", "erc1155", ""),
+    ("erc-1155-005-3-16", "erc1155", ""),
+    ("erc-721-001-3-16", "erc1155", ""),
 ]
 
 # Assistant ID mappings - ensure these are up-to-date with your verifier scripts
@@ -45,6 +48,10 @@ ASSISTANT_IDS_FUNC_BY_FUNC = {
     "erc-20-001-7-16": "asst_M8jjeryyXFYdnGSiQuyOB4ij",
     "erc-20-005-7-16": "asst_w98aowF6diNCOJxaM9li84Hi",
     "erc-20-010-7-16": "asst_FEGX60kN1RpiFGQP3CaQI6vO",
+    "erc-20-721-001-5-16": "asst_waYnC3Fcp2JVmsShGUkz9o5y",
+    "erc-20-1155-001-5-16": "asst_xiVobEjKhGFhIFIPw3EySfsf",
+    "erc-721-1155-001-5-16": "asst_YsmuTcAJW179xCxAufROe2k1",
+    "erc-20-721-1155-001-5-16": "asst_0JMCtwBpCeOHZ1lWmy4nErjB",
 
 }
 

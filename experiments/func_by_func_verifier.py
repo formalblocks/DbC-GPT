@@ -22,26 +22,32 @@ if not openai.api_key:
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
+# "4.1-mini": "asst_zX20A8d9KI7rIK8lLoRTgHK2",
+# "4o_mini_single": "asst_qsyJh2SEYrnuYDiSs5NgdaXx",
+# "4o_mini_erc20": "asst_UWMifHspYEAkIGyWtHzkWiwD",
+# "4o_mini_erc721": "asst_WgHFp7pTzvutsqYE4zOGRAkc",
+# "4o_mini_erc1155": "asst_lOku2pOPoQ5Kdd2elUlglALf",
+# "4o_mini_erc721_1155": "asst_PgrUKdpgXSrVMyNqDm558yM2",
+# "4o_mini_erc20_1155": "asst_Lvr2qeZs6mMaUmcx40xJGlJS",
+# "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
+# "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
+# "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
+# "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
+# "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
+# "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
+# "erc1155-4-o-mini": "asst_M0wMZRzDVSdby3CfuMLtgWsc",
+# "erc20-721-4-o-mini": "asst_6o09ITzVveX37WwyVz42KhrY",
+# "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
+# "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
+
 # Assistant IDs
 ASSISTANT_IDS = {
-    # "4.1-mini": "asst_zX20A8d9KI7rIK8lLoRTgHK2",
-    # "4o_mini_single": "asst_qsyJh2SEYrnuYDiSs5NgdaXx",
-    # "4o_mini_erc20": "asst_UWMifHspYEAkIGyWtHzkWiwD",
-    # "4o_mini_erc721": "asst_WgHFp7pTzvutsqYE4zOGRAkc",
-    # "4o_mini_erc1155": "asst_lOku2pOPoQ5Kdd2elUlglALf",
-    # "4o_mini_erc721_1155": "asst_PgrUKdpgXSrVMyNqDm558yM2",
-    # "4o_mini_erc20_1155": "asst_Lvr2qeZs6mMaUmcx40xJGlJS",
-    # "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
-    # "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
-    # "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
-    # "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
-    # "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
-    # "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
-    # "erc1155-4-o-mini": "asst_M0wMZRzDVSdby3CfuMLtgWsc",
-    # "erc20-721-4-o-mini": "asst_6o09ITzVveX37WwyVz42KhrY",
-    # "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
-    # "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
-    "4o-mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
+    "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
+    "erc-20-001-5-16": "asst_M6Q7TjZTC5wLDXdA88kCre7o",
+    "erc-20-721-001-5-16": "asst_waYnC3Fcp2JVmsShGUkz9o5y",
+    "erc-20-1155-001-5-16": "asst_xiVobEjKhGFhIFIPw3EySfsf",
+    "erc-721-1155-001-5-16": "asst_YsmuTcAJW179xCxAufROe2k1",
+    "erc-20-721-1155-001-5-16": "asst_0JMCtwBpCeOHZ1lWmy4nErjB",
     "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
     "erc-1155-005-3-16": "asst_tsqw3GcFG1kyPz9rNkqkIYAU",
     "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
@@ -168,7 +174,7 @@ def save_thread_to_file(thread_id, requested_type, context_str, assistant_key, r
     """
     try:
         # Create directory structure
-        combo_dir = f"threads_func_by_func/{requested_type}/{context_str}"
+        combo_dir = f"threads_func_by_func/{assistant_key}/{requested_type}/{context_str}"
         os.makedirs(combo_dir, exist_ok=True)
         
         # Define filename
@@ -805,7 +811,7 @@ def main():
     parser.add_argument('--context', type=str, required=True,
                         help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155,erc123")')
     parser.add_argument('--assistant', type=str, default='4o-mini',
-                        choices=['4o-mini', 'erc-1155-001-3-16', 'erc-1155-005-3-16', 'erc-1155-010-3-16', 'erc-1155-001-5-16', 'erc-1155-005-5-16', 'erc-1155-010-5-16', 'erc-1155-001-7-16', 'erc-1155-005-7-16', 'erc-1155-001-7-16', 'erc-1155-010-7-16'],
+                        choices=list(ASSISTANT_IDS.keys()),
                         help='The assistant to use')
     parser.add_argument('--runs', type=int, default=10,
                         help='Number of verification runs')
