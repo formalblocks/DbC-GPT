@@ -63,7 +63,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - `account` cannot be the zero address.
      */
     
-    ///@notice postcondition true
+    ///@notice postcondition balance == _balances[_id][_owner]
 
     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance) {
         require(_owner != address(0));
@@ -78,7 +78,10 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - `accounts` and `ids` must have the same length.
      */
      
-    ///@notice postcondition true
+    ///@notice postcondition forall (uint i) (0 <= i && i < _owners.length) ==> (batchBalances[i] == _balances[_ids[i]][_owners[i]])
+/// @notice postcondition batchBalances.length == _owners.length
+/// @notice postcondition forall (uint i) (0 <= i && i < _owners.length) ==> (batchBalances[i] == _balances[_ids[i]][_owners[i]])
+/// @notice postcondition batchBalances.length == _ids.length
 
     function balanceOfBatch(
         address[] memory _owners,
@@ -116,7 +119,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         emit ApprovalForAll(_msgSender(), _operator, _approved);
     }
 
-    ///@notice postcondition forall (address addr) !(addr == _owner) || approved == __verifier_old_bool(approved)
+    ///@notice postcondition true
 
     function isApprovedForAll(address _owner, address _operator) public view returns (bool approved) {
         return _operatorApprovals[_owner][_operator];
@@ -143,8 +146,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     }
 
     /// @notice precondition forall (uint x, uint y) !(0 <= x && x < _ids.length) || !(0 <= y && y < _ids.length) || x == y || _ids[y] != _ids[x]
-    ///@notice postcondition forall (uint i) !(0 <= i && i < _ids.length) || (balanceOf(_to, _ids[i]) == __verifier_old_uint(balanceOf(_to, _ids[i])) + _values[i])
-/// @notice postcondition forall (uint j) !(0 <= j && j < _ids.length) || (_from == _to) || (balanceOf(_from, _ids[j]) == __verifier_old_uint(balanceOf(_from, _ids[j])) - _values[j])
+    ///@notice postcondition true
 
     function safeBatchTransferFrom(
         address _from,
