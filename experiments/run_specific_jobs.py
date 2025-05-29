@@ -2,102 +2,73 @@ import subprocess
 import time
 import argparse
 import os
+import itertools # Added for combinations
 
 SPECIFIC_JOBS_TO_RUN = [
     # ("4o-mini", "erc1155", ""),
     # ("erc-20-001-5-16", "erc1155", ""),
-    ("erc-721-001-5-16", "erc1155", ""),
+    # ("erc-721-001-5-16", "erc1155", ""),
     # ("erc-1155-001-5-16", "erc1155", ""),
-    ("erc-20-721-001-5-16", "erc1155", ""),
-    ("erc-20-1155-001-5-16", "erc1155", ""),
-    ("erc-721-1155-001-5-16", "erc1155", ""),
-    ("erc-20-721-1155-001-5-16", "erc1155", ""),
+    # ("erc-20-721-001-5-16", "erc1155", ""),
+    # ("erc-20-1155-001-5-16", "erc1155", ""),
+    # ("erc-721-1155-001-5-16", "erc1155", ""),
+    # ("erc-20-721-1155-001-5-16", "erc1155", ""),
     ("erc-1155-001-3-16", "erc1155", ""),
     ("erc-1155-005-3-16", "erc1155", ""),
     ("erc-721-001-3-16", "erc1155", ""),
 ]
 
-# Assistant ID mappings - ensure these are up-to-date with your verifier scripts
-# These are based on the provided file contents. You might need to update them
-# if the verifier scripts change.
-ASSISTANT_IDS_FUNC_BY_FUNC = {
-    "4o-mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
-    "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
-    "erc-1155-005-3-16": "asst_tsqw3GcFG1kyPz9rNkqkIYAU",
-    "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
+# This is the one to use for --mode all.
+# The verifier scripts themselves are responsible for mapping these keys to actual OpenAI Assistant IDs.
+ASSISTANT_KEYS_FOR_ALL_MODE = {
+    "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
     "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
-    "erc-1155-005-5-16": "asst_8ZL8R3zwXyurmmjkFX14kcuS",
-    "erc-1155-010-5-16": "asst_wOnRMvawOAI1sO83lfRWWBLu",
-    "erc-1155-001-7-16": "asst_sZLa64l2Xrb1zNhogDl7RXap",
-    "erc-1155-005-7-16": "asst_m8y0QMRJVtvDRYcPZLVIcHW6",
-    "erc-1155-010-7-16": "asst_MRg3E5ds4NRfFKPTPqLsx9rS",
-    "erc-721-001-3-16": "asst_nPqcpEo7lJnH4nmX9sNSBmfX",
-    "erc-721-005-3-16": "asst_wipOM1IWYzuK1jyqwqRJmDic",
-    "erc-721-010-3-16": "asst_MnKQphy1oPqu7QUWah63JFJk",
-    "erc-721-001-5-16": "asst_kjoZHBonf5tXKpuiJ6Z4T3Gv",
-    "erc-721-005-5-16": "asst_u2r0eDkkqERqTmOY5soRPU7n",
-    "erc-721-010-5-16": "asst_YNv1CBWWYuzTg4D7rRK7JVL6",
-    "erc-721-001-7-16": "asst_odutVf248qCN3C9zlFKLNd9a",
-    "erc-721-005-7-16": "asst_HdOeD4DYTJAHfluUAeu6cwNJ",
-    "erc-20-001-3-16": "asst_wn9R7oQTUr60VpfvvaZ5asBa",
-    "erc-20-005-3-16": "asst_3pHhhAMFwXi9JCVPOvftRQJU",
-    "erc-20-010-3-16": "asst_OZk81q3HVr1mrGXCfOiVKaku",
     "erc-20-001-5-16": "asst_M6Q7TjZTC5wLDXdA88kCre7o",
-    "erc-20-005-5-16": "asst_XFsmrlLmDMcbQ8uPeG4EVGA0",
-    "erc-20-010-5-16": "asst_d1TPZLOP9HSmJq0va4vD2rcW",
-    "erc-20-001-7-16": "asst_M8jjeryyXFYdnGSiQuyOB4ij",
-    "erc-20-005-7-16": "asst_w98aowF6diNCOJxaM9li84Hi",
-    "erc-20-010-7-16": "asst_FEGX60kN1RpiFGQP3CaQI6vO",
+    "erc-721-001-5-16": "asst_kjoZHBonf5tXKpuiJ6Z4T3Gv",
     "erc-20-721-001-5-16": "asst_waYnC3Fcp2JVmsShGUkz9o5y",
     "erc-20-1155-001-5-16": "asst_xiVobEjKhGFhIFIPw3EySfsf",
     "erc-721-1155-001-5-16": "asst_YsmuTcAJW179xCxAufROe2k1",
     "erc-20-721-1155-001-5-16": "asst_0JMCtwBpCeOHZ1lWmy4nErjB",
-
+    # Add any other assistants here that you want to include in "all" mode
+    # These keys must be present in the ASSISTANT_IDS of the verifier scripts.
 }
 
-ASSISTANT_IDS_LOOP_CONTRACT = {
-    "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
-    "erc-20-001-3-16": "asst_wn9R7oQTUr60VpfvvaZ5asBa",
-    "erc-20-005-3-16": "asst_3pHhhAMFwXi9JCVPOvftRQJU",
-    "erc-20-010-3-16": "asst_OZk81q3HVr1mrGXCfOiVKaku",
-    "erc-20-001-5-16": "asst_M6Q7TjZTC5wLDXdA88kCre7o",
-    "erc-20-005-5-16": "asst_XFsmrlLmDMcbQ8uPeG4EVGA0",
-    "erc-20-010-5-16": "asst_d1TPZLOP9HSmJq0va4vD2rcW",
-    "erc-20-001-7-16": "asst_M8jjeryyXFYdnGSiQuyOB4ij",
-    "erc-20-005-7-16": "asst_w98aowF6diNCOJxaM9li84Hi",
-    "erc-20-010-7-16": "asst_FEGX60kN1RpiFGQP3CaQI6vO",
-    "erc-721-001-3-16": "asst_nPqcpEo7lJnH4nmX9sNSBmfX",
-    "erc-721-005-3-16": "asst_wipOM1IWYzuK1jyqwqRJmDic",
-    "erc-721-010-3-16": "asst_MnKQphy1oPqu7QUWah63JFJk",
-    "erc-721-001-5-16": "asst_kjoZHBonf5tXKpuiJ6Z4T3Gv",
-    "erc-721-005-5-16": "asst_u2r0eDkkqERqTmOY5soRPU7n",
-    "erc-721-010-5-16": "asst_YNv1CBWWYuzTg4D7rRK7JVL6",
-    "erc-721-001-7-16": "asst_odutVf248qCN3C9zlFKLNd9a",
-    "erc-721-005-7-16": "asst_HdOeD4DYTJAHfluUAeu6cwNJ",
-    "erc-721-010-7-16": "asst_JNnQFWooGybyzS3juCJT5GQg",
-    "erc-20-001-3-16": "asst_wn9R7oQTUr60VpfvvaZ5asBa",
-    "erc-20-005-3-16": "asst_3pHhhAMFwXi9JCVPOvftRQJU",
-    "erc-20-010-3-16": "asst_OZk81q3HVr1mrGXCfOiVKaku",
-    "erc-20-001-5-16": "asst_M6Q7TjZTC5wLDXdA88kCre7o",
-    "erc-20-005-5-16": "asst_XFsmrlLmDMcbQ8uPeG4EVGA0",
-    "erc-20-010-5-16": "asst_d1TPZLOP9HSmJq0va4vD2rcW",
-    "erc-20-001-7-16": "asst_M8jjeryyXFYdnGSiQuyOB4ij",
-    "erc-20-005-7-16": "asst_w98aowF6diNCOJxaM9li84Hi",
-    "erc-20-010-7-16": "asst_FEGX60kN1RpiFGQP3CaQI6vO",
-}
+ALL_REQUESTED_ERCS = ['erc20', 'erc721', 'erc1155', 'erc123']
+ALL_CONTEXT_ERCS = ['erc20', 'erc721', 'erc1155', 'erc123']
 
-# Add combined assistant IDs for those specified in SPECIFIC_JOBS_TO_RUN
-# This is a simple way to handle them; you might want a more robust lookup.
-ASSISTANT_IDS_COMBINED = {**ASSISTANT_IDS_FUNC_BY_FUNC, **ASSISTANT_IDS_LOOP_CONTRACT}
+
+def generate_all_combinations():
+    """Generates all combinations for --mode all."""
+    jobs = []
+    assistant_keys = list(ASSISTANT_KEYS_FOR_ALL_MODE.keys())
+    
+    # Generate context combinations (none, single, pairs, triples, all four)
+    context_combos_list = []
+    for i in range(len(ALL_CONTEXT_ERCS) + 1):
+        for combo in itertools.combinations(ALL_CONTEXT_ERCS, i):
+            context_combos_list.append(",".join(combo))
+            
+    for assistant_key in assistant_keys:
+        for requested_erc in ALL_REQUESTED_ERCS:
+            for context_str in context_combos_list:
+                jobs.append((assistant_key, requested_erc, context_str))
+    return jobs
 
 def main():
-    parser = argparse.ArgumentParser(description="Run specific contract verification combinations.")
+    parser = argparse.ArgumentParser(description="Run specific or all contract verification combinations.")
     parser.add_argument(
         "--verifier",
         type=str,
         required=True,
         choices=["func_by_func", "loop_contract"],
         help="The verifier script to use: func_by_func_verifier.py or loop_contract_verifier.py"
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="specific", # Default to specific to maintain current behavior if not specified
+        choices=["specific", "all"],
+        help="Mode of operation: 'specific' to run SPECIFIC_JOBS_TO_RUN, 'all' to run all combinations."
     )
     parser.add_argument(
         "--runs",
@@ -114,8 +85,8 @@ def main():
     parser.add_argument(
         "--delay",
         type=int,
-        default=15,
-        help="Delay in seconds between running jobs (default: 5)"
+        default=15, # Kept user's preference from selection
+        help="Delay in seconds between running jobs (default: 15)"
     )
     args = parser.parse_args()
 
@@ -124,11 +95,10 @@ def main():
         verifier_script = "func_by_func_verifier.py"
     elif args.verifier == "loop_contract":
         verifier_script = "loop_contract_verifier.py"
-    else:
+    else: # Should not happen due to choices in argparse
         print(f"Error: Invalid verifier choice '{args.verifier}'.")
         return
 
-    # Ensure the script is run from the 'experiments' directory or adjust path
     script_dir = os.path.dirname(os.path.abspath(__file__))
     verifier_script_path = os.path.join(script_dir, verifier_script)
 
@@ -138,42 +108,73 @@ def main():
         return
         
     print(f"Using verifier: {verifier_script}")
+    print(f"Mode: {args.mode}")
 
-    for i, (assistant_key, requested_erc, context_erc) in enumerate(SPECIFIC_JOBS_TO_RUN):
-        print(f"\\n--- Running Job {i+1}/{len(SPECIFIC_JOBS_TO_RUN)} ---")
-        print(f"Assistant: {assistant_key}, Requested: {requested_erc}, Context: {context_erc if context_erc else 'None'}")
+    jobs_to_run = []
+    if args.mode == "specific":
+        jobs_to_run = SPECIFIC_JOBS_TO_RUN
+        if not jobs_to_run:
+            print("Warning: SPECIFIC_JOBS_TO_RUN is empty and mode is 'specific'. No jobs to run.")
+            return
+    elif args.mode == "all":
+        print("Generating all combinations...")
+        jobs_to_run = generate_all_combinations()
+        num_assistants = len(ASSISTANT_KEYS_FOR_ALL_MODE)
+        num_requested = len(ALL_REQUESTED_ERCS)
+        num_context_variations = 0
+        for i in range(len(ALL_CONTEXT_ERCS) + 1):
+            num_context_variations += len(list(itertools.combinations(ALL_CONTEXT_ERCS, i)))
+        
+        print(f"Total combinations generated for 'all' mode: {len(jobs_to_run)}")
+        print(f"  Assistants: {num_assistants} (from ASSISTANT_KEYS_FOR_ALL_MODE)")
+        print(f"  Requested ERCs: {num_requested} ({', '.join(ALL_REQUESTED_ERCS)})")
+        print(f"  Context Variations: {num_context_variations}")
+        if not jobs_to_run:
+            print("Warning: No combinations generated for 'all' mode. Check configurations.")
+            return
+    
+    if not jobs_to_run: # Should be caught earlier, but as a safeguard
+        print("No jobs to run.")
+        return
 
-        # Check if the assistant_key is directly usable or needs mapping (optional, based on verifier script logic)
-        # The verifier scripts seem to lookup assistant_key in their own ASSISTANT_IDS
-        # So, we pass the key directly.
+    for i, (assistant_key, requested_erc, context_erc) in enumerate(jobs_to_run):
+        # Ensure assistant_key is valid for the chosen verifier by checking its internal ASSISTANT_IDS
+        # This script will pass the key; the verifier script must be able to find it.
+        # No explicit check here as the verifier scripts handle this lookup.
+
+        print(f"\\n--- Running Job {i+1}/{len(jobs_to_run)} ---")
+        print(f"  Verifier: {args.verifier}")
+        print(f"  Assistant: {assistant_key}")
+        print(f"  Requested: {requested_erc}")
+        print(f"  Context: {context_erc if context_erc else 'None'}")
+        print(f"  Runs: {args.runs}, Max Iterations: {args.max_iterations}")
 
         cmd = [
             "python3",
             verifier_script_path,
             "--assistant", assistant_key,
             "--requested", requested_erc,
-            "--context", context_erc if context_erc else "", # Pass empty string for no context
+            "--context", context_erc if context_erc else "", 
             "--runs", str(args.runs),
             "--max-iterations", str(args.max_iterations)
         ]
 
         print(f"Executing command: {' '.join(cmd)}")
         try:
-            # Run the command and stream output
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, cwd=script_dir)
             for line in process.stdout:
                 print(line, end='')
             process.wait()
             if process.returncode != 0:
-                print(f"WARNING: Command for job {i+1} exited with code {process.returncode}")
+                print(f"WARNING: Command for job {i+1} (Assistant: {assistant_key}, Requested: {requested_erc}, Context: {context_erc if context_erc else 'None'}) exited with code {process.returncode}")
         except Exception as e:
-            print(f"ERROR: Command execution failed for job {i+1}: {str(e)}")
+            print(f"ERROR: Command execution failed for job {i+1} (Assistant: {assistant_key}, Requested: {requested_erc}, Context: {context_erc if context_erc else 'None'}): {str(e)}")
 
-        if i < len(SPECIFIC_JOBS_TO_RUN) - 1:
+        if i < len(jobs_to_run) - 1:
             print(f"Waiting {args.delay} seconds before the next job...")
             time.sleep(args.delay)
 
-    print("\\nAll specific jobs completed.")
+    print("\\nAll scheduled jobs completed.")
 
 if __name__ == "__main__":
     main() 

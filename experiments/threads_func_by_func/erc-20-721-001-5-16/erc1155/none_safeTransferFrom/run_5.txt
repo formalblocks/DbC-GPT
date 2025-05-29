@@ -1,9 +1,9 @@
-Thread ID: thread_f8GXfs7Lu7c2JnVev1bpCIN8
+Thread ID: thread_QIZbKb2hAHVZh0KgFtnBYiot
 Request Type: erc1155
 Context: none_safeTransferFrom
 Run: 5
 
-=== USER [2025-05-27 11:52:39] ===
+=== USER [2025-05-27 14:46:47] ===
 Task:
     - You are given a smart contract interface and need to add formal postconditions to a function using solc-verify syntax (`/// @notice postcondition condition`). Postconditions must not end with a semicolon (";").
     - You MUST use the EIP documentation below to understand the required behavior.
@@ -126,85 +126,38 @@ EIP markdown below:
 </eip>
 
 
-=== ASSISTANT [2025-05-27 11:52:42] ===
+=== ASSISTANT [2025-05-27 14:46:50] ===
 ```solidity
-/// @notice postcondition _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value && _from != _to
-/// @notice postcondition _from == _to || _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - _value
+pragma solidity >= 0.5.0;
+
+contract ERC1155 {
+// Mapping from token ID to account balances
+mapping (uint256 => mapping(address => uint256)) private _balances;
+
+// Mapping from account to operator approvals
+mapping (address => mapping(address => bool)) private _operatorApprovals;
+
+/**
+    @notice Transfers `_value` amount of an `_id` from the `_from` address to the `_to` address specified (with safety call).
+    @dev Caller must be approved to manage the tokens being transferred out of the `_from` account (see "Approval" section of the standard).
+    MUST revert if `_to` is the zero address.
+    MUST revert if balance of holder for token `_id` is lower than the `_value` sent.
+    MUST revert on any other error.
+    MUST emit the `TransferSingle` event to reflect the balance change (see "Safe Transfer Rules" section of the standard).
+    After the above conditions are met, this function MUST check if `_to` is a smart contract (e.g. code size > 0). If so, it MUST call `onERC1155Received` on `_to` and act appropriately (see "Safe Transfer Rules" section of the standard).        
+    @param _from    Source address
+    @param _to      Target address
+    @param _id      ID of the token type
+    @param _value   Transfer amount
+    @param _data    Additional data with no specified format, MUST be sent unaltered in call to `onERC1155Received` on `_to`
+*/
+
+/// @notice postcondition _to != address(0) || __verifier_old_uint(_balances[_id][_from]) == _balances[_id][_from]
+/// @notice postcondition _to != address(0) || __verifier_old_uint(_balances[_id][_to]) == _balances[_id][_to]
+/// @notice postcondition _to != address(0) || __verifier_old_uint(_balances[_id][_from]) - _value == _balances[_id][_from]
+/// @notice postcondition _to != address(0) || __verifier_old_uint(_balances[_id][_to]) + _value == _balances[_id][_to]
 function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
-```
-
-=== USER [2025-05-27 11:52:58] ===
-
-            Verification failed for function `function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;`
-
-            The verifier found the following errors:
-            ```
-            Context::[implicit_constructor]: OK
-ERC1155::[constructor]: OK
-ERC1155::uri: OK
-ERC1155::balanceOf: OK
-ERC1155::balanceOfBatch: OK
-ERC1155::setApprovalForAll: OK
-ERC1155::isApprovedForAll: OK
-ERC1155::safeTransferFrom: ERROR
- - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:129:5: Postcondition '_balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value && _from != _to' might not hold at end of function.
-ERC1155::safeBatchTransferFrom: OK
-ERC165::supportsInterface: OK
-ERC165::[implicit_constructor]: OK
-IERC1155::[implicit_constructor]: OK
-IERC1155MetadataURI::[implicit_constructor]: OK
-IERC1155Receiver::[implicit_constructor]: OK
-IERC165::[implicit_constructor]: OK
-Use --show-warnings to see 18 warnings.
-Errors were found by the verifier.
-
-            ```
-
-            Can you fix the specification accordingly?
-            
-
-=== ASSISTANT [2025-05-27 11:53:03] ===
-```solidity
-/// @notice postcondition _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value
-/// @notice postcondition _from == _to || _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - _value
-function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
-```
-
-=== USER [2025-05-27 11:53:22] ===
-
-            Verification failed for function `function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;`
-
-            The verifier found the following errors:
-            ```
-            Context::[implicit_constructor]: OK
-ERC1155::[constructor]: OK
-ERC1155::uri: OK
-ERC1155::balanceOf: OK
-ERC1155::balanceOfBatch: OK
-ERC1155::setApprovalForAll: OK
-ERC1155::isApprovedForAll: OK
-ERC1155::safeTransferFrom: ERROR
- - ./solc_verify_generator/ERC1155/imp/ERC1155_merge.sol:129:5: Postcondition '_balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + _value' might not hold at end of function.
-ERC1155::safeBatchTransferFrom: OK
-ERC165::supportsInterface: OK
-ERC165::[implicit_constructor]: OK
-IERC1155::[implicit_constructor]: OK
-IERC1155MetadataURI::[implicit_constructor]: OK
-IERC1155Receiver::[implicit_constructor]: OK
-IERC165::[implicit_constructor]: OK
-Use --show-warnings to see 18 warnings.
-Errors were found by the verifier.
-
-            ```
-
-            Can you fix the specification accordingly?
-            
-
-=== ASSISTANT [2025-05-27 11:53:26] ===
-```solidity
-/// @notice postcondition _to == _from || _balances[_id][_to] == __verifier_old_uint(_balances[_id][_to]) + (_to == _from ? 0 : _value)
-/// @notice postcondition _from == _to || _balances[_id][_from] == __verifier_old_uint(_balances[_id][_from]) - (_from == _to ? 0 : _value)
-function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) public;
+}
 ```
 
 === END OF THREAD ===
