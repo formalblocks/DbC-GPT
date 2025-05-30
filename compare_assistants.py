@@ -14,7 +14,7 @@ sns.set(font_scale=1.2)
 sns.set_style("whitegrid")
 
 class AssistantComparer:
-    def __init__(self, results_dir_pattern="experiments/results_contract_erc20_20/results_*"):
+    def __init__(self, results_dir_pattern="experiments/results_entire_contract/*"):
         """
         Initialize the assistant comparer.
         
@@ -61,7 +61,13 @@ class AssistantComparer:
         """Find all results CSV files in the results directories."""
         results_files = []
         for results_dir in glob.glob(self.results_dir_pattern):
-            assistant_name = os.path.basename(results_dir).replace("results_", "")
+            # Get the assistant name directly from the directory name
+            assistant_name = os.path.basename(results_dir)
+            
+            # Skip if not a directory
+            if not os.path.isdir(results_dir):
+                continue
+                
             for root, _, files in os.walk(results_dir):
                 for file in files:
                     if file.endswith(".csv"):
@@ -502,7 +508,7 @@ class AssistantComparer:
         table = "\n".join([header, separator] + rows)
         return table
     
-    def generate_detailed_report(self, output_directory="assistant_comparison_report/full_contract_erc20_20", output_file="detailed_report.md"):
+    def generate_detailed_report(self, output_directory="assistant_comparison_report/entire_contract", output_file="detailed_report.md"):
         """
         Generate a comprehensive detailed report in markdown format similar to the experiment_analysis_summary_latest.md
         """
@@ -701,7 +707,7 @@ class AssistantComparer:
             print(f"Error generating detailed report: {e}")
             return None
             
-    def generate_report(self, output_directory="assistant_comparison_report/full_contract_erc20_20"):
+    def generate_report(self, output_directory="assistant_comparison_report/entire_contract"):
         """Generate a comprehensive report with tables and visualizations."""
         # Create output directory if it doesn't exist
         os.makedirs(output_directory, exist_ok=True)
