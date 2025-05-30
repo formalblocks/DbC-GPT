@@ -41,35 +41,46 @@ if not openai.api_key:
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 # OpenAI Assistant IDs for different model configurations
+# ASSISTANT_IDS = {
+#     "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
+#     "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
+#     "erc-1155-005-3-16": "asst_nsa6edZTsNNWj4SBFSPeFYPq",
+#     "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
+#     "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
+#     "erc-1155-005-5-16": "asst_8ZL8R3zwXyurmmjkFX14kcuS",
+#     "erc-1155-010-5-16": "asst_wOnRMvawOAI1sO83lfRWWBLu",
+#     "erc-1155-001-7-16": "asst_sZLa64l2Xrb1zNhogDl7RXap",
+#     "erc-1155-005-7-16": "asst_m8y0QMRJVtvDRYcPZLVIcHW6",
+#     "erc-1155-010-7-16": "asst_MRg3E5ds4NRfFKPTPqLsx9rS",
+#     "erc-20-001-3-16": "asst_wn9R7oQTUr60VpfvvaZ5asBa",
+#     "erc-20-005-3-16": "asst_3pHhhAMFwXi9JCVPOvftRQJU",
+#     "erc-20-010-3-16": "asst_OZk81q3HVr1mrGXCfOiVKaku",
+#     "erc-20-001-5-16": "asst_M6Q7TjZTC5wLDXdA88kCre7o",
+#     "erc-20-005-5-16": "asst_XFsmrlLmDMcbQ8uPeG4EVGA0",
+#     "erc-20-010-5-16": "asst_d1TPZLOP9HSmJq0va4vD2rcW",
+#     "erc-20-001-7-16": "asst_M8jjeryyXFYdnGSiQuyOB4ij",
+#     "erc-20-005-7-16": "asst_w98aowF6diNCOJxaM9li84Hi",
+#     "erc-20-010-7-16": "asst_FEGX60kN1RpiFGQP3CaQI6vO",
+#     "erc-721-001-3-16": "asst_nPqcpEo7lJnH4nmX9sNSBmfX",
+#     "erc-721-005-3-16": "asst_wipOM1IWYzuK1jyqwqRJmDic",
+#     "erc-721-010-3-16": "asst_MnKQphy1oPqu7QUWah63JFJk",
+#     "erc-721-001-5-16": "asst_kjoZHBonf5tXKpuiJ6Z4T3Gv",
+#     "erc-721-005-5-16": "asst_u2r0eDkkqERqTmOY5soRPU7n",
+#     "erc-721-010-5-16": "asst_YNv1CBWWYuzTg4D7rRK7JVL6",
+#     "erc-721-001-7-16": "asst_odutVf248qCN3C9zlFKLNd9a",
+#     "erc-721-005-7-16": "asst_HdOeD4DYTJAHfluUAeu6cwNJ",
+#     "erc-721-010-7-16": "asst_JNnQFWooGybyzS3juCJT5GQg",
+# }
+
 ASSISTANT_IDS = {
     "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
-    "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
-    "erc-1155-005-3-16": "asst_nsa6edZTsNNWj4SBFSPeFYPq",
-    "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
     "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
-    "erc-1155-005-5-16": "asst_8ZL8R3zwXyurmmjkFX14kcuS",
-    "erc-1155-010-5-16": "asst_wOnRMvawOAI1sO83lfRWWBLu",
-    "erc-1155-001-7-16": "asst_sZLa64l2Xrb1zNhogDl7RXap",
-    "erc-1155-005-7-16": "asst_m8y0QMRJVtvDRYcPZLVIcHW6",
-    "erc-1155-010-7-16": "asst_MRg3E5ds4NRfFKPTPqLsx9rS",
-    "erc-20-001-3-16": "asst_wn9R7oQTUr60VpfvvaZ5asBa",
-    "erc-20-005-3-16": "asst_3pHhhAMFwXi9JCVPOvftRQJU",
-    "erc-20-010-3-16": "asst_OZk81q3HVr1mrGXCfOiVKaku",
     "erc-20-001-5-16": "asst_M6Q7TjZTC5wLDXdA88kCre7o",
-    "erc-20-005-5-16": "asst_XFsmrlLmDMcbQ8uPeG4EVGA0",
-    "erc-20-010-5-16": "asst_d1TPZLOP9HSmJq0va4vD2rcW",
-    "erc-20-001-7-16": "asst_M8jjeryyXFYdnGSiQuyOB4ij",
-    "erc-20-005-7-16": "asst_w98aowF6diNCOJxaM9li84Hi",
-    "erc-20-010-7-16": "asst_FEGX60kN1RpiFGQP3CaQI6vO",
-    "erc-721-001-3-16": "asst_nPqcpEo7lJnH4nmX9sNSBmfX",
-    "erc-721-005-3-16": "asst_wipOM1IWYzuK1jyqwqRJmDic",
-    "erc-721-010-3-16": "asst_MnKQphy1oPqu7QUWah63JFJk",
     "erc-721-001-5-16": "asst_kjoZHBonf5tXKpuiJ6Z4T3Gv",
-    "erc-721-005-5-16": "asst_u2r0eDkkqERqTmOY5soRPU7n",
-    "erc-721-010-5-16": "asst_YNv1CBWWYuzTg4D7rRK7JVL6",
-    "erc-721-001-7-16": "asst_odutVf248qCN3C9zlFKLNd9a",
-    "erc-721-005-7-16": "asst_HdOeD4DYTJAHfluUAeu6cwNJ",
-    "erc-721-010-7-16": "asst_JNnQFWooGybyzS3juCJT5GQg",
+    "erc-20-721-001-5-16": "asst_waYnC3Fcp2JVmsShGUkz9o5y",
+    "erc-20-1155-001-5-16": "asst_xiVobEjKhGFhIFIPw3EySfsf",
+    "erc-721-1155-001-5-16": "asst_YsmuTcAJW179xCxAufROe2k1",
+    "erc-20-721-1155-001-5-16": "asst_0JMCtwBpCeOHZ1lWmy4nErjB",
 }
 
 # File paths for contract interfaces and documentation
@@ -382,6 +393,7 @@ class SolcVerifyWrapper:
     """Wrapper class for interacting with solc-verify tool for contract verification."""
     
     SOLC_VERIFY_CMD = "solc-verify.py"
+    SOLC_VERIFY_TIMEOUT = int(os.getenv("SOLC_VERIFY_TIMEOUT", "120"))
     
     # Template paths for different ERC standards
     TEMPLATE_PATHS = {
@@ -410,14 +422,32 @@ class SolcVerifyWrapper:
         Returns:
             VerificationResult containing the verification status and output
         """
-        from subprocess import PIPE, run
-        command = [cls.SOLC_VERIFY_CMD, file_path]
+        from subprocess import PIPE, run, TimeoutExpired
+        timeout = cls.SOLC_VERIFY_TIMEOUT
+        # Pass --timeout to solc-verify and also enforce Python-level kill
+        command = [
+            cls.SOLC_VERIFY_CMD,
+            "--timeout", str(timeout),
+            "--show-warnings",
+            file_path
+        ]
+        logging.info(f"Invoking solc-verify: {' '.join(command)}")
+
         try:
-            result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, check=False)
+            result = run(
+                command,
+                stdout=PIPE, stderr=PIPE,
+                universal_newlines=True,
+                check=False,
+                timeout=timeout + 10
+            )
             return VerificationResult(result.returncode, result.stdout + result.stderr)
         except FileNotFoundError:
             logging.error(f"Command not found: {cls.SOLC_VERIFY_CMD}. Make sure solc-verify.py is installed and in PATH.")
             return VerificationResult(-1, f"Command not found: {cls.SOLC_VERIFY_CMD}")
+        except TimeoutExpired:
+            logging.error(f"solc-verify timed out after {timeout}s")
+            return VerificationResult(-1, f"solc-verify TIMEOUT after {timeout}s")
         except Exception as e:
             logging.error(f"Error running solc-verify: {e} on file {file_path}")
             return VerificationResult(-1, f"Error running solc-verify: {e}")
