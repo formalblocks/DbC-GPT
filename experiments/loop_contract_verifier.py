@@ -1,3 +1,17 @@
+"""
+Smart Contract Verification System
+
+This script implements a system for verifying smart contract specifications using OpenAI's API
+and solc-verify. It handles the verification process for ERC20, ERC721, and ERC1155 token standards.
+
+Key Features:
+- Automated verification of smart contract specifications
+- Support for multiple ERC token standards
+- Parallel processing of verification runs
+- Detailed logging and result tracking
+- Error handling and retry mechanisms
+"""
+
 import logging
 import openai
 import time
@@ -11,47 +25,31 @@ import argparse
 from dotenv import load_dotenv
 import random
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import tempfile
+import shutil
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
+# Load environment variables and configure API key
 load_dotenv()
-
-# Get API key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY not found in environment variables")
 
+# Configure logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-# Old assistant IDs
-# "4.1-mini": "asst_zX20A8d9KI7rIK8lLoRTgHK2",
-# "4o_mini_single": "asst_qsyJh2SEYrnuYDiSs5NgdaXx",
-# "4o_mini_erc20": "asst_UWMifHspYEAkIGyWtHzkWiwD",
-# "4o_mini_erc721": "asst_WgHFp7pTzvutsqYE4zOGRAkc",
-# "4o_mini_erc1155": "asst_lOku2pOPoQ5Kdd2elUlglALf",
-# "4o_mini_erc721_1155": "asst_PgrUKdpgXSrVMyNqDm558yM2",
-# "4o_mini_erc20_1155": "asst_Lvr2qeZs6mMaUmcx40xJGlJS",
-# "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
-# "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
-# "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
-# "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
-# "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
-# "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
-# "erc1155-4-o-mini": "asst_M0wMZRzDVSdby3CfuMLtgWsc",
-# "erc20-721-4-o-mini": "asst_6o09ITzVveX37WwyVz42KhrY",
-# "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
-# "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
-
-# Assistant IDs
+# OpenAI Assistant IDs for different model configurations
 ASSISTANT_IDS = {
     "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
-    # "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
-    # "erc-1155-005-3-16": "asst_nsa6edZTsNNWj4SBFSPeFYPq",
-    # "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
-    # "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
-    # "erc-1155-005-5-16": "asst_8ZL8R3zwXyurmmjkFX14kcuS",
-    # "erc-1155-010-5-16": "asst_wOnRMvawOAI1sO83lfRWWBLu",
-    # "erc-1155-001-7-16": "asst_sZLa64l2Xrb1zNhogDl7RXap",
-    # "erc-1155-005-7-16": "asst_m8y0QMRJVtvDRYcPZLVIcHW6",
-    # "erc-1155-010-7-16": "asst_MRg3E5ds4NRfFKPTPqLsx9rS",
+    "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
+    "erc-1155-005-3-16": "asst_nsa6edZTsNNWj4SBFSPeFYPq",
+    "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
+    "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
+    "erc-1155-005-5-16": "asst_8ZL8R3zwXyurmmjkFX14kcuS",
+    "erc-1155-010-5-16": "asst_wOnRMvawOAI1sO83lfRWWBLu",
+    "erc-1155-001-7-16": "asst_sZLa64l2Xrb1zNhogDl7RXap",
+    "erc-1155-005-7-16": "asst_m8y0QMRJVtvDRYcPZLVIcHW6",
+    "erc-1155-010-7-16": "asst_MRg3E5ds4NRfFKPTPqLsx9rS",
     "erc-20-001-3-16": "asst_wn9R7oQTUr60VpfvvaZ5asBa",
     "erc-20-005-3-16": "asst_3pHhhAMFwXi9JCVPOvftRQJU",
     "erc-20-010-3-16": "asst_OZk81q3HVr1mrGXCfOiVKaku",
@@ -72,7 +70,7 @@ ASSISTANT_IDS = {
     "erc-721-010-7-16": "asst_JNnQFWooGybyzS3juCJT5GQg",
 }
 
-# Paths to interface templates and EIP docs
+# File paths for contract interfaces and documentation
 INTERFACE_PATHS = {
     "erc20": "../assets/file_search/erc20_interface.md",
     "erc721": "../assets/file_search/erc721_interface.md",
@@ -92,6 +90,7 @@ REFERENCE_SPEC_PATHS = {
     "": ""
 }
 
+# Instructions for the AI model to generate contract specifications
 INSTRUCTIONS = """
 Task:
     - You are given a smart contract interface and need to add formal postconditions to a function using solc-verify syntax (`/// @notice postcondition condition`). Postconditions must not end with a semicolon (";").
@@ -113,14 +112,11 @@ Requirements:
     - The implication operator "==>" is not valid in solc-verify notation, so it must appear NOWHERE in a postcondition. For instance, a postcondition of the form `/// @notice postcondition condition1 ==> condition2` is invalid. Similarly, a postcondition of the form `/// @notice postcondition (forall uint x) condition1 ==> condition2` is also invalid. You can use instead the notation `!(condition) || condition2` to simulate the implication operator. For instance, `/// @notice postcondition (forall uint x) condition1 ==> condition2` can be written as `/// @notice postcondition !(condition1) || condition2`.
     - Return the entire contract interface, inside ```solidity``` tags, with no implementation code, just the interface with the postconditions added and function signatures.
 
-
-Your task is to annotate the function in the contract below:
+Your task is to annotate the functions in the contract below:
 """
 
-# Initialize the global counter
+# Global state for tracking verification progress
 interaction_counter = 0
-
-# Initialize the global verification status
 verification_status = []
 
 def save_thread_to_file(thread_id, requested_type, context_str, assistant_key, run_number):
@@ -135,7 +131,7 @@ def save_thread_to_file(thread_id, requested_type, context_str, assistant_key, r
     """
     try:
         # Create directory structure
-        combo_dir = f"threads_{assistant_key}/{requested_type}/{context_str}"
+        combo_dir = f"threads_entire_contract/{assistant_key}/{requested_type}/{context_str}"
         os.makedirs(combo_dir, exist_ok=True)
         
         # Define filename
@@ -312,22 +308,23 @@ class Interaction:
 
 @dataclass
 class VerificationResult:
-    status: int
-    output: str
+    """Represents the result of a contract verification attempt"""
+    status: int  # 0 for success, non-zero for failure
+    output: str  # Verification output or error message
 
 class SolcVerifyWrapper:
-
-    SOLC_VERIFY_CMD = "solc-verify.py"
-    SPEC_FILE_PATH = '../temp/spec.sol'
+    """Wrapper class for interacting with solc-verify tool"""
     
-    # Template paths for different ERC standards
+    SOLC_VERIFY_CMD = "solc-verify.py"
+    SOLC_VERIFY_TIMEOUT = int(os.getenv("SOLC_VERIFY_TIMEOUT", "120"))
+
+    # Template and merge file paths for different ERC standards
     TEMPLATE_PATHS = {
         "erc20": './solc_verify_generator/ERC20/templates/imp_spec_merge.template',
         "erc721": './solc_verify_generator/ERC721/templates/imp_spec_merge.template',
         "erc1155": './solc_verify_generator/ERC1155/templates/imp_spec_merge.template',
     }
     
-    # Merge paths for different ERC standards
     MERGE_PATHS = {
         "erc20": './solc_verify_generator/ERC20/imp/ERC20_merge.sol',
         "erc721": './solc_verify_generator/ERC721/imp/ERC721_merge.sol',
@@ -336,48 +333,124 @@ class SolcVerifyWrapper:
 
     @classmethod
     def call_solc(cls, file_path) -> VerificationResult:
-        from subprocess import PIPE, run
-        command = [cls.SOLC_VERIFY_CMD, file_path]
-        result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        return VerificationResult(result.returncode, result.stdout + result.stderr)
+        from subprocess import PIPE, run, TimeoutExpired
+        timeout = cls.SOLC_VERIFY_TIMEOUT
+        # Pass --timeout to solc-verify and also enforce Python-level kill
+        command = [
+            cls.SOLC_VERIFY_CMD,
+            "--timeout", str(timeout),
+            "--show-warnings",
+            file_path
+        ]
+        logging.info(f"Invoking solc-verify: {' '.join(command)}")
+
+        try:
+            result = run(
+                command,
+                stdout=PIPE, stderr=PIPE,
+                universal_newlines=True,
+                check=False,
+                timeout=timeout + 10
+            )
+            return VerificationResult(result.returncode, result.stdout + result.stderr)
+        except FileNotFoundError:
+            logging.error(f"Command not found: {cls.SOLC_VERIFY_CMD}. Make sure solc-verify.py is installed and in PATH.")
+            return VerificationResult(-1, f"Command not found: {cls.SOLC_VERIFY_CMD}")
+        except TimeoutExpired:
+            logging.error(f"solc-verify timed out after {timeout}s")
+            return VerificationResult(-1, f"solc-verify TIMEOUT after {timeout}s")
+        except Exception as e:
+            logging.error(f"Error running solc-verify: {e} on file {file_path}")
+            return VerificationResult(-1, f"Error running solc-verify: {e}")
+
     
     @classmethod
-    def verify(cls, soldity_spec_str: str, requested_type: str = "erc20") -> VerificationResult:
-        """
-        Parameters
-            spec_str: Solidity code with only the function signatures
-                annotated with solc-verify conditions
-            requested_type: The ERC standard to verify ("erc20", "erc721", "erc1155")
-        """
-        # Use appropriate template and merge paths based on requested_type
-        template_path = cls.TEMPLATE_PATHS.get(requested_type, cls.TEMPLATE_PATHS[requested_type])
-        merge_path = cls.MERGE_PATHS.get(requested_type, cls.MERGE_PATHS[requested_type])
+    def verify(cls,
+               solidity_spec_str: str,
+               requested_type: str = "erc20") -> VerificationResult:
+        
+        original_merge_file_path = cls.MERGE_PATHS.get(requested_type)
+        if not original_merge_file_path:
+            raise ValueError(f"Unsupported requested_type for SolcVerifyWrapper: {requested_type} - merge path not found.")
+        dependency_source_dir = os.path.dirname(original_merge_file_path)
+        if not os.path.isdir(dependency_source_dir):
+             logging.warning(f"Dependency source directory not found or not a directory: {dependency_source_dir}") # Changed to warning
+             # Proceeding as some simple cases might not have external dependencies in that specific dir.
 
-        
-        # Make sure directories exist
-        os.makedirs(os.path.dirname(cls.SPEC_FILE_PATH), exist_ok=True)
-        os.makedirs(os.path.dirname(merge_path), exist_ok=True)
-        
-        Utils.save_string_to_file(cls.SPEC_FILE_PATH, soldity_spec_str)
-        from solc_verify_generator.main import generate_merge
+        workdir = tempfile.mkdtemp(prefix="solc_verify_")
         try:
-            print("GENERATING MERGE", cls.SPEC_FILE_PATH, template_path, merge_path)
-            generate_merge(cls.SPEC_FILE_PATH, template_path, merge_path)
-        except RuntimeError as e:
-            return VerificationResult(*e.args)
-        return cls.call_solc(merge_path)
+            spec_file_in_workdir  = os.path.join(workdir, "spec.sol")
+            merge_file_basename = os.path.basename(original_merge_file_path)
+            merge_file_in_workdir = os.path.join(workdir, merge_file_basename)
+            
+            Utils.save_string_to_file(spec_file_in_workdir, solidity_spec_str)
+
+            # Create the 'temp/' subdirectory inside workdir for AST output by solc_verify_generator.main.call_solc
+            os.makedirs(os.path.join(workdir, "temp"), exist_ok=True)
+
+            # Copy dependencies from dependency_source_dir to workdir
+            if os.path.isdir(dependency_source_dir): # Check again before copying
+                for item_name in os.listdir(dependency_source_dir):
+                    source_item_path = os.path.join(dependency_source_dir, item_name)
+                    dest_item_path = os.path.join(workdir, item_name)
+                    
+                    if os.path.isdir(source_item_path):
+                        shutil.copytree(source_item_path, dest_item_path)
+                    elif item_name.endswith(".sol") or os.path.isfile(source_item_path): # Copy .sol files and other files
+                        shutil.copy2(source_item_path, dest_item_path)
+                logging.info(f"Copied dependencies from {dependency_source_dir} to {workdir}")
+
+            from solc_verify_generator.main import generate_merge # Keep import here to avoid issues if this class moves
+            
+            original_cwd = os.getcwd()
+            os.chdir(workdir)
+            try:
+                # Template path should be resolved relative to the original CWD or be absolute.
+                absolute_template_path = os.path.abspath(os.path.join(original_cwd, cls.TEMPLATE_PATHS[requested_type]))
+                if not os.path.exists(absolute_template_path):
+                    logging.error(f"Template file not found: {absolute_template_path}")
+                    return VerificationResult(-1, f"Template file not found: {absolute_template_path}")
+
+                # generate_merge will operate in workdir. 
+                # spec_file_in_workdir is relative to new CWD (workdir) so just "spec.sol"
+                # merge_file_in_workdir is also relative, e.g. "ERC1155_merge.sol"
+                generate_merge(
+                  "spec.sol", 
+                  absolute_template_path, 
+                  merge_file_basename 
+                )
+            except RuntimeError as e:
+                 # generate_merge raises RuntimeError if solc fails on spec
+                logging.error(f"Error during generate_merge: {e}")
+                # e.args already contains (returncode, output)
+                return VerificationResult(e.args[0] if len(e.args) > 0 else -1, str(e.args[1] if len(e.args) > 1 else e))
+            except Exception as e:
+                logging.error(f"Unexpected error during generate_merge: {e}")
+                return VerificationResult(-1, f"Unexpected error during generate_merge: {e}")
+            finally:
+                os.chdir(original_cwd)
+
+            # Execute solc-verify in the working directory to ensure proper path resolution
+            # The tool requires relative paths to be resolved from the working directory
+            os.chdir(workdir)
+            try:
+                verification_result = cls.call_solc(merge_file_basename)
+            finally:
+                os.chdir(original_cwd)
+            
+            return verification_result
+        finally:
+            shutil.rmtree(workdir, ignore_errors=True)
+
 
 class Utils:
-
+    """Utility class for file operations and data processing"""
+    
     @staticmethod
     def extract_solidity_code(markdown_text):
-        # Regex pattern to match code blocks with "solidity" as the language identifier
+        """Extract Solidity code from markdown text"""
         pattern = r'```solidity\n(.*?)```'
-        
-        # Use re.DOTALL to match newline characters in the code block
         matches = re.findall(pattern, markdown_text, re.DOTALL)
-        
-        # Try to return first match
         try:
             return matches[0]
         except IndexError:
@@ -385,6 +458,7 @@ class Utils:
     
     @staticmethod
     def read_file_content(file_path):
+        """Read content from a file"""
         try:
             with open(file_path, 'r') as file:
                 return file.read()
@@ -394,6 +468,7 @@ class Utils:
 
     @staticmethod
     def save_string_to_file(file_name, content):
+        """Save string content to a file"""
         try:
             with open(file_name, 'w') as file:
                 file.write(content)
@@ -403,14 +478,10 @@ class Utils:
 
     @staticmethod
     def save_results_to_csv(file_name: str, results: List[dict]):
-        # Create directory if it doesn't exist
+        """Save verification results to a CSV file"""
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
-        
-        # Convert list of dictionaries to pandas DataFrame
         df = pd.DataFrame(results)
-        
         try:
-            # Save DataFrame to CSV
             df.to_csv(file_name, index=False)
             print(f"Results successfully saved to {file_name}")
         except IOError as e:
@@ -538,87 +609,160 @@ def loop(thread: Thread, message: str, max_iterations=10, requested_type="erc20"
             """
 
         logging.info("Verification failed. Trying again with specific error feedback.")
+        logging.info(f"ERROR OUTPUT: \n\n {error_output} \n\n END ERROR OUTPUT")
         return loop(thread, feedback_prompt, max_iterations, requested_type)
     else:
-        print("Verified!")
+        logging.info("########################################################")
+        logging.info("VERIFIED SUCCESSFULLY!")
+        logging.info("########################################################")
         return solidity_code
 
 def run_verification_process(requested_type, context_types, assistant_key="4o-mini", num_runs=10, max_iterations=10):
-    """
-    Run the verification process
-    
-    Parameters:
-        requested_type: String indicating which contract to verify (e.g., "erc20")
-        context_types: List of strings indicating which contract types to include as examples
-        assistant_key: String key for selecting the assistant ID
-        num_runs: Number of times to run the verification
-        max_iterations: Maximum iterations per run
-    """
-    # Validate inputs
-    if requested_type not in INTERFACE_PATHS:
-        raise ValueError(f"Requested type '{requested_type}' not supported. Available types: {list(INTERFACE_PATHS.keys())}")
-    
-    for ctx_type in context_types:
-        if ctx_type and ctx_type not in REFERENCE_SPEC_PATHS:
-            raise ValueError(f"Context type '{ctx_type}' not supported. Available types: {list(REFERENCE_SPEC_PATHS.keys())}")
-    
+    # Argument checks and initial setup
+    if not openai.api_key:
+        raise ValueError("OPENAI_API_KEY not found in environment variables.")
     if assistant_key not in ASSISTANT_IDS:
-        raise ValueError(f"Assistant key '{assistant_key}' not found. Available keys: {list(ASSISTANT_IDS.keys())}")
+        raise ValueError(f"Assistant key '{assistant_key}' not found in ASSISTANT_IDS.")
+    if requested_type not in INTERFACE_PATHS:
+        raise ValueError(f"Requested type '{requested_type}' not found in INTERFACE_PATHS.")
+    # Ensure os is imported if not already at the top level of the module
+    import os 
+    # Validate context types
+    for ct in context_types:
+        if ct and ct not in REFERENCE_SPEC_PATHS: # Allow empty string for "none" context
+            raise ValueError(f"Context type '{ct}' not found in REFERENCE_SPEC_PATHS.")
+
+    logging.info(f"Running verification for: Requested Type='{requested_type}', Context Types={context_types}, Assistant Key='{assistant_key}', Target Runs={num_runs}, Max Iterations={max_iterations}")
+
+    prompt = generate_prompt(requested_type, context_types)
+    context_str = "_".join([c for c in context_types if c]) if any(c for c in context_types) else "none" # Ensure "none" if context_types is empty or just [""]
     
-    # Select the assistant ID
-    assistant_id = ASSISTANT_IDS[assistant_key]
-    
-    # Generate the output file name - filter out empty context types
-    valid_contexts = [ct for ct in context_types if ct]
-    context_str = '_'.join(valid_contexts) if valid_contexts else "none"
-    file_prefix = f"{requested_type}_[{context_str}]"
-    
-    # Create results directory
-    results_dir = f"results_{assistant_key}/{requested_type}/{context_str}"
+    results_base_dir = "results_entire_contract"
+    results_dir = os.path.join(results_base_dir, assistant_key, requested_type, context_str)
     os.makedirs(results_dir, exist_ok=True)
     
-    # Generate the prompt
-    prompt = generate_prompt(requested_type, context_types)
+    csv_file_name = f"{requested_type}_[{context_str if context_str else 'none'}].csv"
+    csv_file_path = os.path.join(results_dir, csv_file_name)
+
+    thread_base_dir = "threads_loop_contract" 
     
-    results = []
-    for i in range(num_runs):
-        global interaction_counter
-        global verification_status
-        
-        interaction_counter = 0 
-        start_time = time.time()
-        assistant = Assistant(assistant_id)
-        thread = Thread(assistant)
-        result = loop(thread, prompt, max_iterations, requested_type)
-        end_time = time.time()
-        duration = end_time - start_time
-        annotated_contract = ""
+    futures = []
+    # Avoid oversubscription: do inner runs sequentially by default
+    import multiprocessing
+    inner_workers = int(os.getenv("INNER_MAX_WORKERS", "1"))
+    with ProcessPoolExecutor(max_workers=inner_workers) as executor:
+        for i in range(num_runs):
+            futures.append(
+                executor.submit(
+                    _one_run,
+                    i,
+                    requested_type,
+                    context_types,
+                    assistant_key,
+                    max_iterations,
+                    prompt,
+                    ASSISTANT_IDS[assistant_key],
+                    thread_base_dir
+                )
+            )
 
-        # Save thread to file
-        save_result = save_thread_to_file(thread.id, requested_type, context_str, assistant_key, i+1)
-        if not save_result:
-            print(f"WARNING: Failed to save thread file for run {i+1}")
-        
-        verified_status = isinstance(result, str) # Check if loop returned code (success) or False (failure)
-        annotated_contract = result if verified_status else ""
+    new_results_list = []
+    for fut in as_completed(futures):
+        try:
+            result_dict = fut.result()
+            new_results_list.append(result_dict)
+        except Exception as e:
+            logging.error(f"A run generated an exception: {e}", exc_info=True)
+            new_results_list.append({
+                "run": -1, # Placeholder for failed run index
+                "time_taken": 0,
+                "iterations": 0,
+                "verified": "ERROR_IN_FUTURE",
+                "annotated_contract": str(e),
+                "status": [{"error": str(e)}]
+            })
 
-
-        results.append({
-            "run": i + 1,
-            "time_taken": duration,
-            "iterations": interaction_counter -1 if interaction_counter > 0 else 0, # Adjust iteration count
-            "verified": verified_status,
-            "annotated_contract": annotated_contract,
-            "status": verification_status # Append the collected status for this run
-        })
-        verification_status = [] # Reset status for the next run
+    # Create DataFrame from results
+    results_df = pd.DataFrame(new_results_list)
     
-    # Save results to CSV
-    csv_filename = f"{results_dir}/{file_prefix}.csv"
-    Utils.save_results_to_csv(csv_filename, results)
-    return results
+    # Sort by run index to keep CSV ordered
+    if 'run' in results_df.columns:
+        results_df = results_df.sort_values(by='run').reset_index(drop=True)
+    
+    Utils.save_results_to_csv(csv_file_path, results_df.to_dict(orient='records'))
+    logging.info(f"All results saved to {csv_file_path}")
+    return results_df.to_dict(orient='records')
+
+def _one_run(run_index, requested_type, context_types, assistant_key_name, max_iterations, prompt_content, assistant_id, thread_base_dir_for_saving):
+    """
+    Executes a single verification run. This function is designed to be called by ProcessPoolExecutor.
+    It handles its own OpenAI client initialization if necessary, or assumes it's configured.
+    """
+    # Each process should have its own interaction_counter and verification_status
+    # These cannot be shared directly as globals across processes.
+    local_interaction_counter = 0
+    local_verification_status = []
+
+    # Ensure OpenAI API key is available in the new process if not inherited
+    if not openai.api_key:
+        load_dotenv() # Try loading .env again
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        if not openai.api_key:
+            logging.error("OpenAI API key not found in _one_run process.")
+            return {
+                "run": run_index + 1,
+                "time_taken": 0,
+                "iterations": 0,
+                "verified": "ERROR",
+                "annotated_contract": "OpenAI API key not configured in process.",
+                "status": [{"error": "OpenAI API key not configured"}]
+            }
+
+    start_time = time.time()
+
+    # Create Assistant and Thread objects for this run
+    assistant_obj = Assistant(assistant_id)
+    thread_obj = Thread(assistant_obj)
+    
+    # Resetting globals for this process/run
+    global interaction_counter, verification_status
+    interaction_counter = 0
+    verification_status = []
+
+    annotated_contract_result = loop(thread_obj, prompt_content, max_iterations, requested_type)
+
+    # After loop, retrieve the values from the globals of this process
+    final_interaction_counter = interaction_counter
+    final_verification_status = verification_status
+
+    duration = time.time() - start_time
+    
+    # Define context_str for saving thread file
+    context_str_for_save = "_".join([c for c in context_types if c]) if context_types else "none"
+
+    # Save thread to file
+    save_thread_to_file(
+        thread_id=thread_obj.id,
+        requested_type=requested_type,
+        context_str=context_str_for_save,
+        assistant_key=assistant_key_name,
+        run_number=run_index + 1
+    )
+
+    is_verified = isinstance(annotated_contract_result, str) # Assuming string means verified contract
+    
+    return {
+        "run": run_index + 1,
+        "time_taken": duration,
+        "iterations": max(0, final_interaction_counter -1),
+        "verified": is_verified,
+        "annotated_contract": annotated_contract_result if is_verified else "",
+        "status": final_verification_status
+    }
+
 
 def main():
+    """Main entry point for the verification process"""
     parser = argparse.ArgumentParser(description='Run contract verification with different contexts')
     parser.add_argument('--requested', type=str, required=True, 
                         choices=['erc20', 'erc721', 'erc1155'],
@@ -626,26 +770,19 @@ def main():
     parser.add_argument('--context', type=str, required=True,
                         help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155")')
     parser.add_argument('--assistant', type=str, default='4o-mini',
-                        choices=['4o-mini', 'erc-1155-001-3-16', 'erc-1155-005-3-16', 'erc-1155-010-3-16', 'erc-1155-001-5-16', 'erc-1155-005-5-16', 'erc-1155-010-5-16', 'erc-1155-001-7-16', 'erc-1155-005-7-16', 'erc-1155-010-7-16', 'erc-20-001-3-16', 'erc-20-005-3-16', 'erc-20-010-3-16', 'erc-20-001-5-16', 'erc-20-005-5-16', 'erc-20-010-5-16', 'erc-20-001-7-16', 'erc-20-005-7-16', 'erc-20-010-7-16', 'erc-721-001-3-16', 'erc-721-005-3-16', 'erc-721-010-3-16', 'erc-721-001-5-16', 'erc-721-005-5-16', 'erc-721-010-5-16', 'erc-721-001-7-16', 'erc-721-005-7-16', 'erc-721-010-7-16'],
+                        choices=list(ASSISTANT_IDS.keys()),
                         help='The assistant to use')
     parser.add_argument('--runs', type=int, default=10,
                         help='Number of verification runs')
     parser.add_argument('--max-iterations', type=int, default=10,
-                        help='Maximum iterations per run')
+                        help='Maximum number of iterations for each run (default: 10)')
     
     args = parser.parse_args()
-    
-    # Parse the context types
-    if not args.context.strip():
-        # Handle empty context string
-        context_types = [""]
-    else:
-        context_types = [ctx.strip().lower() for ctx in args.context.split(',')]
-    
-    # Run the verification process
+    context_list = [c.strip() for c in args.context.split(',') if c.strip()] if args.context else []
+
     run_verification_process(
-        requested_type=args.requested.lower(),
-        context_types=context_types,
+        requested_type=args.requested,
+        context_types=context_list,
         assistant_key=args.assistant,
         num_runs=args.runs,
         max_iterations=args.max_iterations

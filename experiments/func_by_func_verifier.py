@@ -1,3 +1,19 @@
+"""
+Smart Contract Function-by-Function Verification System
+
+This script implements a system for verifying smart contract specifications function by function
+using OpenAI's API and solc-verify. It handles the verification process for ERC20, ERC721, and ERC1155
+token standards by processing each function independently.
+
+Key Features:
+- Function-by-function verification of smart contract specifications
+- Support for multiple ERC token standards
+- Parallel processing of verification runs
+- Detailed logging and result tracking
+- Error handling and retry mechanisms
+- Function-specific documentation support
+"""
+
 import logging
 import openai
 import time
@@ -12,38 +28,23 @@ from dotenv import load_dotenv
 import random
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import textwrap
+import tempfile
+import shutil
 
+# Load environment variables and configure API key
 load_dotenv()
-
-# Get API key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY not found in environment variables")
 
+# Configure logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-# Assistant IDs
+# OpenAI Assistant IDs for different model configurations
 ASSISTANT_IDS = {
-    # "4.1-mini": "asst_zX20A8d9KI7rIK8lLoRTgHK2",
-    # "4o_mini_single": "asst_qsyJh2SEYrnuYDiSs5NgdaXx",
-    # "4o_mini_erc20": "asst_UWMifHspYEAkIGyWtHzkWiwD",
-    # "4o_mini_erc721": "asst_WgHFp7pTzvutsqYE4zOGRAkc",
-    # "4o_mini_erc1155": "asst_lOku2pOPoQ5Kdd2elUlglALf",
-    # "4o_mini_erc721_1155": "asst_PgrUKdpgXSrVMyNqDm558yM2",
-    # "4o_mini_erc20_1155": "asst_Lvr2qeZs6mMaUmcx40xJGlJS",
-    # "4o_mini_erc20_721": "asst_jfH5JELAZxvA75FzwguaZpwL",
-    # "4o_mini_erc20_721_1155": "asst_6QvHigvGMTBgAFdmU4gW3QEe",
-    # "4o-mini-erc-1155-new": "asst_C2rYMIVOTAiRS2o17e94QGGR"
-    # "erc20-721-1155-4-o-mini": "asst_PDcb3OR1jFTRQNTFpZgdY9wt",
-    # "erc20-4-o-mini": "asst_H3M7A5dC7RXLbY49k0GhuCJS",
-    # "erc721-4-o-mini": "asst_aroYVGYOi4TB4PMsEgEzVfIS",
-    # "erc1155-4-o-mini": "asst_M0wMZRzDVSdby3CfuMLtgWsc",
-    # "erc20-721-4-o-mini": "asst_6o09ITzVveX37WwyVz42KhrY",
-    # "erc20-1155-4-o-mini": "asst_231yQkPjxDM9cBgo76IzQgdh",
-    # "erc721-1155-4-o-mini": "asst_Qs4WLHGBoP9fAMgbZ6y7gFrX",
-    "4o-mini": "asst_WRF0J9P9EiZ70DcntBSlapWB",
+    "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
     "erc-1155-001-3-16": "asst_uMYPmlxmT9ppnPKZQ8ZTyfYb",
-    "erc-1155-005-3-16": "asst_tsqw3GcFG1kyPz9rNkqkIYAU",
+    "erc-1155-005-3-16": "asst_nsa6edZTsNNWj4SBFSPeFYPq",
     "erc-1155-010-3-16": "asst_BsZDuAHsmBfrlimXinHt96Cb",
     "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
     "erc-1155-005-5-16": "asst_8ZL8R3zwXyurmmjkFX14kcuS",
@@ -51,6 +52,15 @@ ASSISTANT_IDS = {
     "erc-1155-001-7-16": "asst_sZLa64l2Xrb1zNhogDl7RXap",
     "erc-1155-005-7-16": "asst_m8y0QMRJVtvDRYcPZLVIcHW6",
     "erc-1155-010-7-16": "asst_MRg3E5ds4NRfFKPTPqLsx9rS",
+    "erc-20-001-3-16": "asst_wn9R7oQTUr60VpfvvaZ5asBa",
+    "erc-20-005-3-16": "asst_3pHhhAMFwXi9JCVPOvftRQJU",
+    "erc-20-010-3-16": "asst_OZk81q3HVr1mrGXCfOiVKaku",
+    "erc-20-001-5-16": "asst_M6Q7TjZTC5wLDXdA88kCre7o",
+    "erc-20-005-5-16": "asst_XFsmrlLmDMcbQ8uPeG4EVGA0",
+    "erc-20-010-5-16": "asst_d1TPZLOP9HSmJq0va4vD2rcW",
+    "erc-20-001-7-16": "asst_M8jjeryyXFYdnGSiQuyOB4ij",
+    "erc-20-005-7-16": "asst_w98aowF6diNCOJxaM9li84Hi",
+    "erc-20-010-7-16": "asst_FEGX60kN1RpiFGQP3CaQI6vO",
     "erc-721-001-3-16": "asst_nPqcpEo7lJnH4nmX9sNSBmfX",
     "erc-721-005-3-16": "asst_wipOM1IWYzuK1jyqwqRJmDic",
     "erc-721-010-3-16": "asst_MnKQphy1oPqu7QUWah63JFJk",
@@ -59,9 +69,10 @@ ASSISTANT_IDS = {
     "erc-721-010-5-16": "asst_YNv1CBWWYuzTg4D7rRK7JVL6",
     "erc-721-001-7-16": "asst_odutVf248qCN3C9zlFKLNd9a",
     "erc-721-005-7-16": "asst_HdOeD4DYTJAHfluUAeu6cwNJ",
+    "erc-721-010-7-16": "asst_JNnQFWooGybyzS3juCJT5GQg",
 }
 
-# Paths to interface templates and EIP docs
+# File paths for contract interfaces and documentation
 INTERFACE_PATHS = {
     "erc20": "../assets/file_search/erc20_interface.md",
     "erc721": "../assets/file_search/erc721_interface.md",
@@ -69,6 +80,7 @@ INTERFACE_PATHS = {
     "erc123": "../assets/file_search/erc123_interface.md",
 }
 
+# File paths for EIP documentation
 EIP_PATHS = {
     "erc20": "../assets/file_search/erc-20.md",
     "erc721": "../assets/file_search/erc-721.md",
@@ -76,6 +88,7 @@ EIP_PATHS = {
     "erc123": "../assets/file_search/erc-123.md",
 }
 
+# File paths for reference specifications
 REFERENCE_SPEC_PATHS = {
     "erc20": "../assets/file_search/erc20_ref_spec.md",
     "erc721": "../assets/file_search/erc721_ref_spec.md",
@@ -84,6 +97,7 @@ REFERENCE_SPEC_PATHS = {
     "": ""
 }
 
+# Instructions for the AI model to generate contract specifications
 INSTRUCTIONS = """
 Task:
     - You are given a smart contract interface and need to add formal postconditions to a function using solc-verify syntax (`/// @notice postcondition condition`). Postconditions must not end with a semicolon (";").
@@ -103,27 +117,32 @@ Requirements:
     - YOU MUST SPECIFY THE RANGE when postconditions quantify over arrays. For example, for array `arr` a postcondition quantification would look like `/// @notice postcondition forall (uint i) !(0 <= i && i < arr.length) || condition`. Without the range, the postcondition is likely to be invalid.
     - The implication operator "==>" is not valid in solc-verify notation, so it must appear NOWHERE in a postcondition. For instance, a postcondition of the form `/// @notice postcondition condition1 ==> condition2` is invalid. Similarly, a postcondition of the form `/// @notice postcondition (forall uint x) condition1 ==> condition2` is also invalid. You can use instead the notation `!(condition) || condition2` to simulate the implication operator. For instance, `/// @notice postcondition (forall uint x) condition1 ==> condition2` can be written as `/// @notice postcondition !(condition1) || condition2`.
 
-
 Your task is to annotate the function in the contract below:
 """
 
-# Initialize the global counter
+# Global state for tracking verification progress
 interaction_counter = 0
-
-# Initialize the global verification status
 verification_status = []
 
 def parse_solidity_interface(solidity_code: str):
     """
     Parses Solidity interface code to extract components.
-    Returns a dictionary containing 'state_vars', 'events', 'functions'.
+    Returns a dictionary containing 'pragma', 'state_vars', 'events', 'functions'.
     Functions value is a list of {'signature': str, 'body': str}.
     """
     components = {
+        'pragma': "pragma solidity ^0.8.0;", # Default pragma if not found
         'state_vars': [],
         'events': [],
         'functions': []
     }
+
+    # Extract pragma
+    pragma_match = re.search(r"^\s*pragma solidity[^;]+;", solidity_code, re.MULTILINE)
+    if pragma_match:
+        components['pragma'] = pragma_match.group(0).strip()
+    else:
+        logging.warning("No pragma directive found in solidity_code. Using default.")
 
     # Extract state variables (simple version: assumes they are declared outside functions)
     # Matches lines like: mapping(...) private _variable; string private _uri; uint256 constant VALUE = 10;
@@ -152,7 +171,7 @@ def parse_solidity_interface(solidity_code: str):
         # We assume the interface has no body, just the signature ending in ';'
         components['functions'].append({'signature': signature.strip(), 'name': func_dict['name']})
 
-    logging.info(f"Parsed components: {len(components['state_vars'])} state vars, {len(components['events'])} events, {len(components['functions'])} functions.")
+    logging.info(f"Parsed components: {len(components['state_vars'])} state vars, {len(components['events'])} events, {len(components['functions'])} functions. Pragma: {components['pragma']}")
 
     return components
 
@@ -168,7 +187,7 @@ def save_thread_to_file(thread_id, requested_type, context_str, assistant_key, r
     """
     try:
         # Create directory structure
-        combo_dir = f"threads_func_by_func/{requested_type}/{context_str}"
+        combo_dir = f"threads_func_by_func/{assistant_key}/{requested_type}/{context_str}"
         os.makedirs(combo_dir, exist_ok=True)
         
         # Define filename
@@ -206,11 +225,13 @@ def save_thread_to_file(thread_id, requested_type, context_str, assistant_key, r
         return False
 
 class Assistant:
+    """Represents an OpenAI Assistant with a specific ID for contract verification."""
     
     def __init__(self, id) -> None:
         self.id = id
 
 class Thread:
+    """Manages a conversation thread with an OpenAI Assistant."""
     
     def __init__(self, assistant: Assistant) -> None:
         self.assistant = assistant
@@ -222,6 +243,7 @@ class Thread:
         stop=stop_after_attempt(5)
     )
     def _create_thread(self):
+        """Creates a new thread with retry logic for API errors."""
         try:
             return openai.beta.threads.create()
         except (openai.RateLimitError, openai.APIError, openai.APIConnectionError) as e:
@@ -230,9 +252,11 @@ class Thread:
     
     @property
     def id(self):
+        """Returns the thread ID."""
         return self._thread.id
     
     def send_message(self, content: str) -> 'Interaction':
+        """Sends a message to the thread and returns an Interaction object."""
         interaction = Interaction(self, content)
         return interaction
     
@@ -243,11 +267,11 @@ class Thread:
         stop=stop_after_attempt(5)
     )
     def last_message(self) -> str:
+        """Retrieves the last message from the thread with retry logic."""
         try:
             response = openai.beta.threads.messages.list(
                 thread_id=self.id
             )
-            # Returns last response from thread
             return response.data[0].content[0].text.value
         except (openai.RateLimitError, openai.APIError, openai.APIConnectionError) as e:
             logging.error(f"API error: {str(e)}. Retrying...")
@@ -257,6 +281,7 @@ class Thread:
             return "Error retrieving message"
 
 class Interaction:
+    """Represents a single interaction with the OpenAI Assistant."""
     
     def __init__(self, thread: Thread, prompt: str) -> None:
         self.thread = thread
@@ -270,6 +295,7 @@ class Interaction:
         stop=stop_after_attempt(5)
     )
     def _create_message(self):
+        """Creates a message in the thread with retry logic."""
         try:
             openai.beta.threads.messages.create(
                 thread_id = self.thread.id,
@@ -286,6 +312,7 @@ class Interaction:
         stop=stop_after_attempt(5)
     )
     def _create_run(self):
+        """Creates a run for the message with retry logic."""
         try:
             self._run = openai.beta.threads.runs.create(
                 thread_id = self.thread.id,
@@ -297,6 +324,7 @@ class Interaction:
     
     @property
     def id(self):
+        """Returns the run ID."""
         return self._run.id
     
     @retry(
@@ -305,6 +333,7 @@ class Interaction:
         stop=stop_after_attempt(5)
     )
     def remote_sync(self):
+        """Synchronizes the run status with the server with retry logic."""
         try:
             self._run = openai.beta.threads.runs.retrieve(
                 thread_id = self.thread.id,
@@ -316,9 +345,11 @@ class Interaction:
     
     @property
     def status(self):
+        """Returns the current run status."""
         return self._run.status
     
     def await_for_response(self) -> str:
+        """Waits for and returns the assistant's response with error handling."""
         status = self.status
         while (status != "completed"):
             try:
@@ -329,29 +360,28 @@ class Interaction:
                 if status == "failed" or status == "expired":
                     error_info = self._run.last_error if hasattr(self._run, 'last_error') else "Unknown error"
                     logging.error(f"Run {status}: {error_info}")
-                    # Additional wait time if a run fails before retrying
                     time.sleep(10)
-                    self._create_run()  # Create a new run after failure or expiration
+                    self._create_run()
                     status = self.status
                 
-                # Add a random sleep time to avoid hitting rate limits
                 sleep_time = 2 + random.uniform(0, 1)
                 time.sleep(sleep_time)
             except Exception as e:
                 logging.error(f"Error during response wait: {str(e)}")
-                time.sleep(5)  # Sleep before retry on general errors
+                time.sleep(5)
         
         return self.thread.last_message
 
 @dataclass
 class VerificationResult:
-    status: int
-    output: str
+    """Represents the result of a contract verification attempt."""
+    status: int  # 0 for success, non-zero for failure
+    output: str  # Verification output or error message
 
 class SolcVerifyWrapper:
-
+    """Wrapper class for interacting with solc-verify tool for contract verification."""
+    
     SOLC_VERIFY_CMD = "solc-verify.py"
-    SPEC_FILE_PATH = '../temp/spec.sol'
     
     # Template paths for different ERC standards
     TEMPLATE_PATHS = {
@@ -371,48 +401,120 @@ class SolcVerifyWrapper:
 
     @classmethod
     def call_solc(cls, file_path) -> VerificationResult:
+        """
+        Calls the solc-verify tool on a given file.
+        
+        Args:
+            file_path: Path to the Solidity file to verify
+            
+        Returns:
+            VerificationResult containing the verification status and output
+        """
         from subprocess import PIPE, run
         command = [cls.SOLC_VERIFY_CMD, file_path]
-        result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        return VerificationResult(result.returncode, result.stdout + result.stderr)
+        try:
+            result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, check=False)
+            return VerificationResult(result.returncode, result.stdout + result.stderr)
+        except FileNotFoundError:
+            logging.error(f"Command not found: {cls.SOLC_VERIFY_CMD}. Make sure solc-verify.py is installed and in PATH.")
+            return VerificationResult(-1, f"Command not found: {cls.SOLC_VERIFY_CMD}")
+        except Exception as e:
+            logging.error(f"Error running solc-verify: {e} on file {file_path}")
+            return VerificationResult(-1, f"Error running solc-verify: {e}")
     
     @classmethod
     def verify(cls, soldity_spec_str: str, requested_type: str = "erc20") -> VerificationResult:
         """
-        Parameters
-            spec_str: Solidity code with only the function signatures
-                annotated with solc-verify conditions
+        Verifies a Solidity specification string against a template.
+        
+        Args:
+            spec_str: Solidity code with function signatures annotated with solc-verify conditions
             requested_type: The ERC standard to verify ("erc20", "erc721", "erc1155")
+            
+        Returns:
+            VerificationResult containing the verification status and output
         """
-        # Use appropriate template and merge paths based on requested_type
-        template_path = cls.TEMPLATE_PATHS.get(requested_type, cls.TEMPLATE_PATHS[requested_type])
-        merge_path = cls.MERGE_PATHS.get(requested_type, cls.MERGE_PATHS[requested_type])
+        original_merge_file_path = cls.MERGE_PATHS.get(requested_type)
+        if not original_merge_file_path:
+            raise ValueError(f"Unsupported requested_type for SolcVerifyWrapper: {requested_type} - merge path not found.")
+        
+        dependency_source_dir = os.path.dirname(original_merge_file_path)
+        if not os.path.isdir(dependency_source_dir) and requested_type in ["erc20", "erc721", "erc1155"]:
+             logging.warning(f"Dependency source directory not found or not a directory: {dependency_source_dir}")
 
-        
-        # Make sure directories exist
-        os.makedirs(os.path.dirname(cls.SPEC_FILE_PATH), exist_ok=True)
-        os.makedirs(os.path.dirname(merge_path), exist_ok=True)
-        
-        Utils.save_string_to_file(cls.SPEC_FILE_PATH, soldity_spec_str)
-        from solc_verify_generator.main import generate_merge
+        workdir = tempfile.mkdtemp(prefix="solc_verify_fbf_")
         try:
-            print("GENERATING MERGE")
-            generate_merge(cls.SPEC_FILE_PATH, template_path, merge_path)
-        except RuntimeError as e:
-            return VerificationResult(*e.args)
-        return cls.call_solc(merge_path)
+            spec_file_in_workdir  = os.path.join(workdir, "spec.sol")
+            merge_file_basename = os.path.basename(original_merge_file_path)
+
+            Utils.save_string_to_file(spec_file_in_workdir, soldity_spec_str)
+
+            # Create temp directory for AST output
+            os.makedirs(os.path.join(workdir, "temp"), exist_ok=True)
+
+            # Copy dependencies from source directory
+            if os.path.isdir(dependency_source_dir):
+                for item_name in os.listdir(dependency_source_dir):
+                    source_item_path = os.path.join(dependency_source_dir, item_name)
+                    dest_item_path = os.path.join(workdir, item_name)
+                    
+                    if os.path.isdir(source_item_path):
+                        shutil.copytree(source_item_path, dest_item_path)
+                    elif item_name.endswith(".sol") or os.path.isfile(source_item_path):
+                        shutil.copy2(source_item_path, dest_item_path)
+                logging.debug(f"Copied dependencies from {dependency_source_dir} to {workdir}")
+
+            from solc_verify_generator.main import generate_merge 
+            
+            original_cwd = os.getcwd()
+            os.chdir(workdir)
+            try:
+                absolute_template_path = os.path.abspath(os.path.join(original_cwd, cls.TEMPLATE_PATHS[requested_type]))
+                if not os.path.exists(absolute_template_path):
+                    logging.error(f"Template file not found: {absolute_template_path}")
+                    return VerificationResult(-1, f"Template file not found: {absolute_template_path}")
+
+                generate_merge(
+                  "spec.sol",
+                  absolute_template_path, 
+                  merge_file_basename
+                )
+            except RuntimeError as e:
+                logging.error(f"Error during generate_merge: {e}")
+                return VerificationResult(e.args[0] if len(e.args) > 0 else -1, str(e.args[1] if len(e.args) > 1 else e))
+            except Exception as e:
+                logging.error(f"Unexpected error during generate_merge: {e}")
+                return VerificationResult(-1, f"Unexpected error during generate_merge: {e}")
+            finally:
+                os.chdir(original_cwd)
+            
+            # Execute solc-verify in the working directory
+            os.chdir(workdir)
+            try:
+                verification_result = cls.call_solc(merge_file_basename)
+            finally:
+                os.chdir(original_cwd)
+            
+            return verification_result
+        finally:
+            shutil.rmtree(workdir, ignore_errors=True)
 
 class Utils:
+    """Utility class for file operations and data processing."""
 
     @staticmethod
     def extract_solidity_code(markdown_text):
-        # Regex pattern to match code blocks with "solidity" as the language identifier
+        """
+        Extracts Solidity code from markdown text.
+        
+        Args:
+            markdown_text: Text containing markdown-formatted Solidity code
+            
+        Returns:
+            Extracted Solidity code or None if not found
+        """
         pattern = r'```solidity\n(.*?)```'
-        
-        # Use re.DOTALL to match newline characters in the code block
         matches = re.findall(pattern, markdown_text, re.DOTALL)
-        
-        # Try to return first match
         try:
             return matches[0]
         except IndexError:
@@ -420,6 +522,15 @@ class Utils:
     
     @staticmethod
     def read_file_content(file_path):
+        """
+        Reads content from a file.
+        
+        Args:
+            file_path: Path to the file to read
+            
+        Returns:
+            File contents or None if read fails
+        """
         try:
             with open(file_path, 'r') as file:
                 return file.read()
@@ -429,6 +540,13 @@ class Utils:
 
     @staticmethod
     def save_string_to_file(file_name, content):
+        """
+        Saves string content to a file.
+        
+        Args:
+            file_name: Path where to save the content
+            content: String content to save
+        """
         try:
             with open(file_name, 'w') as file:
                 file.write(content)
@@ -438,14 +556,16 @@ class Utils:
 
     @staticmethod
     def save_results_to_csv(file_name: str, results: List[dict]):
-        # Create directory if it doesn't exist
+        """
+        Saves verification results to a CSV file.
+        
+        Args:
+            file_name: Path where to save the CSV file
+            results: List of dictionaries containing verification results
+        """
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
-        
-        # Convert list of dictionaries to pandas DataFrame
         df = pd.DataFrame(results)
-        
         try:
-            # Save DataFrame to CSV
             df.to_csv(file_name, index=False)
             print(f"Results successfully saved to {file_name}")
         except IOError as e:
@@ -453,7 +573,15 @@ class Utils:
 
     @staticmethod
     def extract_content_from_markdown(file_path):
-        """Extract code block or content from a markdown file"""
+        """
+        Extracts code block or content from a markdown file.
+        
+        Args:
+            file_path: Path to the markdown file
+            
+        Returns:
+            Extracted content or empty string if file not found
+        """
         if file_path == "":
             return ""
         content = Utils.read_file_content(file_path)
@@ -465,7 +593,15 @@ class Utils:
         return None
 
 def load_example_contracts(context_types):
-    """Load example reference specifications for the given context types"""
+    """
+    Loads example reference specifications for the given context types.
+    
+    Args:
+        context_types: List of contract types to load examples for
+        
+    Returns:
+        List of example contract specifications in markdown format
+    """
     examples = []
     
     for contract_type in context_types:
@@ -477,14 +613,33 @@ def load_example_contracts(context_types):
     return examples
 
 def load_target_interface(requested_type):
-    """Load the interface that needs to be annotated"""
+    """
+    Loads the interface that needs to be annotated.
+    
+    Args:
+        requested_type: The type of contract interface to load
+        
+    Returns:
+        Interface content or None if not found
+    """
     if requested_type in INTERFACE_PATHS:
         return Utils.extract_content_from_markdown(INTERFACE_PATHS[requested_type])
     return None
 
-def assemble_partial_contract(contract_name: str, components: dict, current_annotations: dict, target_func_sig: str = None):
-    """Assembles a partial contract string for verification."""
-    code = f"pragma solidity >= 0.5.0;\n\ncontract {contract_name} {{\n\n"
+def assemble_partial_contract(pragma_str: str, contract_name: str, components: dict, current_annotations: dict):
+    """
+    Assembles a partial contract string for verification.
+    
+    Args:
+        pragma_str: Solidity pragma directive
+        contract_name: Name of the contract
+        components: Dictionary containing contract components (events, state vars, functions)
+        current_annotations: Dictionary mapping function signatures to their annotations
+        
+    Returns:
+        Complete contract string with annotations
+    """
+    code = f"{pragma_str}\n\ncontract {contract_name} {{\n\n"
 
     # Add Events
     code += "    // Events\n"
@@ -504,17 +659,12 @@ def assemble_partial_contract(contract_name: str, components: dict, current_anno
         func_sig = func_info['signature']
         annotations = current_annotations.get(func_sig)
         if annotations:
-            # Add existing/verified annotations
             for line in annotations.split('\n'):
                  code += f"    {line}\n"
-        elif func_sig == target_func_sig:
-             # Placeholder for the function being actively verified if its annotations aren't ready
-             pass # Annotations will be added just before verification call
         else:
-            # Add placeholder for functions not yet processed or failed
             code += "    /// @notice postcondition true\n"
 
-        code += f"    {func_sig}\n\n" # Add function signature
+        code += f"    {func_sig}\n\n"
 
     code += "}\n"
     return code
@@ -522,54 +672,63 @@ def assemble_partial_contract(contract_name: str, components: dict, current_anno
 def extract_annotations_for_function(llm_response: str, target_func_sig: str):
     """
     Extracts annotations from an LLM response.
-    This function will extract ONLY the lines starting with "@notice postcondition".
-    Trailing semicolons on annotation lines are removed.
+    
+    Args:
+        llm_response: Response from the language model
+        target_func_sig: Function signature to extract annotations for
+        
+    Returns:
+        Extracted annotations or None if not found
     """
-
     if not llm_response or not llm_response.strip():
         print(f"LLM response for {target_func_sig} is empty or whitespace.")
         return None
 
     processed_llm_response = llm_response.strip()
-    
-    # Only collect lines that contain @notice postcondition
     postcondition_lines = [line.strip().rstrip(";") for line in processed_llm_response.split('\n') if "@notice postcondition" in line.strip()]
-    
-    # Join the postcondition lines with newlines
     final_annotations_str = "\n".join(postcondition_lines)
     return final_annotations_str
-    
 
-def process_single_function(thread: Thread, func_info: dict, components: dict, verified_annotations: dict, eip_doc: str, base_instructions: str, examples_text: str, max_iterations_per_function: int, requested_type: str):
-    """Tries to generate and verify annotations for a single function."""
+def process_single_function(thread: Thread, func_info: dict, components: dict, pragma_str: str, verified_annotations: dict, eip_doc: str, base_instructions: str, examples_text: str, max_iterations_per_function: int, requested_type: str):
+    """
+    Processes a single function for verification.
+    
+    Args:
+        thread: Thread object for communication
+        func_info: Dictionary containing function information
+        components: Dictionary containing contract components
+        pragma_str: Solidity pragma directive
+        verified_annotations: Dictionary of verified annotations
+        eip_doc: EIP documentation
+        base_instructions: Base instructions for the model
+        examples_text: Example specifications
+        max_iterations_per_function: Maximum number of verification attempts
+        requested_type: Type of contract being verified
+        
+    Returns:
+        Tuple of (annotations, interaction_count) or (None, interaction_count) if verification fails
+    """
     func_sig = func_info['signature']
     func_name = func_info['name']
     contract_name = requested_type.upper()
     logging.info(f"Processing function: {func_name} ({func_sig})")
 
-    # Track interactions within this function context
     func_interactions = 0
-
-    # Pre-format verified annotations to avoid nested f-string issues
     verified_ann_str = "\n".join([f'{fs}\n{fa}' for fs, fa in verified_annotations.items()])
-    # Pre-format state vars and events
     state_vars_str = "\n".join(components.get('state_vars', []))
     events_str = "\n".join(components.get('events', []))
 
     # Extract EIP snippet specific to the current function
     specific_eip_snippet = "No specific EIP segment found for this function."
     if eip_doc and func_name:
-        # Regex to find the Javadoc-style comment and the function signature for the specific function name
-        # It captures the comment block and the function line associated with func_name
         pattern = rf"(/\*\*(?:[^*]|\*(?!/))*?\*/\s*function\s+{re.escape(func_name)}\s*\(.*\).*?;)"
         match = re.search(pattern, eip_doc, re.DOTALL)
         if match:
             specific_eip_snippet = match.group(1).strip()
 
-    # Indent state variables for placement within the contract block - do this BEFORE checking for function-specific files
     indented_state_vars = "\n".join([f"    {var}" for var in components.get('state_vars', [])])
 
-    # Check for a function-specific markdown file
+    # Check for function-specific documentation
     func_md_path = f"../assets/file_search/{requested_type.lower()}/{func_name}.md"
     func_md_content = ""
     try:
@@ -578,11 +737,9 @@ def process_single_function(thread: Thread, func_info: dict, components: dict, v
         logging.info(f"Found function-specific file for {func_name} at {func_md_path}")
     except:
         logging.info(f"No function-specific file found for {func_name} at {func_md_path}")
-        # We already defined indented_state_vars above, so we don't need to do it again here
 
-    # Format the current prompt based on whether we have a function-specific markdown file
+    # Format prompt based on available documentation
     if func_md_content:
-        print("FOUND FUNCTION-SPECIFIC FILE")
         current_prompt = textwrap.dedent(f"""{base_instructions}
 
 ```solidity
@@ -599,8 +756,6 @@ EIP markdown below:
 </eip>
 """).lstrip()
     else:
-        print("NO FUNCTION-SPECIFIC FILE FOUND")
-        # Use the original formatting as a fallback
         current_prompt = textwrap.dedent(f"""{base_instructions}
 
 ```solidity
@@ -632,16 +787,14 @@ EIP Documentation Snippet (if relevant to `{func_name}`):
 
         if not proposed_annotations:
             logging.error(f"No annotations extracted for {func_name}. LLM response: {response[:500]}")
-            # Ask LLM to provide only annotations
             current_prompt = f"Your previous response did not seem to contain just the annotations for `{func_sig}`. Please provide ONLY the `/// @notice postcondition ...` lines for this function. Do not include the function signature or any other text."
-            continue # Try again with the feedback
+            continue
 
-        # Assemble the contract with *proposed* annotations for the current function
+        # Assemble contract with proposed annotations
         temp_annotations = verified_annotations.copy()
         temp_annotations[func_sig] = proposed_annotations
-        partial_contract_code = assemble_partial_contract(contract_name, components, temp_annotations)
+        partial_contract_code = assemble_partial_contract(pragma_str, contract_name, components, temp_annotations)
 
-        # Verify the partially assembled contract
         try:
             verification_result: VerificationResult = SolcVerifyWrapper.verify(
                 partial_contract_code, 
@@ -651,15 +804,8 @@ EIP Documentation Snippet (if relevant to `{func_name}`):
             logging.error(f"Verification failed for {func_name} with exception: {e}")
             return None, func_interactions
 
-        # --- Verification Result Analysis --- 
-        verification_passed = False
+        verification_passed = verification_result.status == 0
         error_output = verification_result.output
-
-        if verification_result.status != 0:
-            error_output = verification_result.output
-            verification_passed = False
-        else:
-            verification_passed = True
 
         if verification_passed:
             logging.info(f"Successfully verified annotations for function {func_name}.")
@@ -678,26 +824,43 @@ EIP Documentation Snippet (if relevant to `{func_name}`):
             """
 
     logging.error(f"Failed to verify annotations for function {func_name} after {max_iterations_per_function} attempts.")
-    return None, func_interactions # Failed after max attempts
+    return None, func_interactions
 
 def run_verification_process(requested_type, context_types, assistant_key="4o-mini", num_runs=10, max_iterations=10):
     """
-    Run the function-by-function verification process
+    Runs the function-by-function verification process.
+    
+    Args:
+        requested_type: Type of contract to verify (e.g., "erc20")
+        context_types: List of context contract types
+        assistant_key: Key for the OpenAI assistant to use
+        num_runs: Number of verification runs to perform
+        max_iterations: Maximum number of iterations per function
+        
+    Returns:
+        List of dictionaries containing verification results
     """
-    global verification_status # Use the global list to store errors across function calls within a run
-    # Validate inputs
+    global verification_status
     if requested_type not in INTERFACE_PATHS:
         raise ValueError(f"Requested type '{requested_type}' not supported.")
-    # ... (rest of validation)
+    for ct in context_types:
+        if ct and ct not in REFERENCE_SPEC_PATHS:
+            raise ValueError(f"Context type '{ct}' not found in REFERENCE_SPEC_PATHS.")
+    if assistant_key not in ASSISTANT_IDS:
+        raise ValueError(f"Assistant key '{assistant_key}' not found in ASSISTANT_IDS.")
 
     assistant_id = ASSISTANT_IDS[assistant_key]
     valid_contexts = [ct for ct in context_types if ct]
     context_str = '_'.join(valid_contexts) if valid_contexts else "none"
-    file_prefix = f"fbf_{requested_type}_[{context_str}]" # Prefix for function-by-function
-    results_dir = f"results_func_by_func/{assistant_key}/{requested_type}/{context_str}"
+    
+    results_base_dir = "results_func_by_func"
+    results_dir = os.path.join(results_base_dir, assistant_key, requested_type, context_str)
     os.makedirs(results_dir, exist_ok=True)
 
-    # Load common resources
+    csv_file_name = f"fbf_{requested_type}_[{context_str if context_str else 'none'}].csv"
+    csv_file_path = os.path.join(results_dir, csv_file_name)
+
+    # Load contract interface and parse components
     target_interface_content = Utils.extract_content_from_markdown(INTERFACE_PATHS[requested_type])
     if not target_interface_content:
          raise ValueError(f"Could not load interface content for {requested_type}")
@@ -706,16 +869,15 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
     if not parsed_components['functions']:
         raise ValueError("No functions found in the interface file.")
 
+    pragma_str = parsed_components.get('pragma', "pragma solidity ^0.8.0;")
     contract_name = requested_type.upper()
-
     eip_doc = Utils.extract_content_from_markdown(EIP_PATHS.get(requested_type, ""))
-
     base_instructions = INSTRUCTIONS
 
-    # Generate example texts (reference specifications) based on context_types
+    # Generate example texts from context types
     raw_examples_content = ""
-    for ctx_type in context_types: # Iterate over the original context_types list
-        if not ctx_type: # Skip if context type string is empty
+    for ctx_type in context_types:
+        if not ctx_type:
             continue
         
         ref_spec_content = Utils.extract_content_from_markdown(REFERENCE_SPEC_PATHS.get(ctx_type, ""))
@@ -727,33 +889,33 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
         examples_section_for_prompt = f"\nHere are examples of similar ERC formal specifications:{raw_examples_content}"
 
     results = []
-    max_iterations_per_function = max_iterations  # Use the parameter value instead of hardcoding
+    max_iterations_per_function = max_iterations
 
     for i in range(num_runs):
-        print(f"\n--- Starting Run {i + 1}/{num_runs} --- ")
+        current_run_number = i + 1
+        print(f"\n--- Starting Func-by-Func Run {current_run_number}/{num_runs} --- ")
         run_start_time = time.time()
         
-        verified_annotations = {} # Reset for each run
-        function_verification_status = {} # Track status per function for this run
-        verification_status = [] # Reset global error list for this run
+        verified_annotations = {}
+        function_verification_status = {}
+        verification_status = []
         total_interactions = 0
-        threads_info = [] # Store thread info for logging
+        threads_info = []
 
         for func_info in parsed_components.get('functions', []):
-            # Create a new thread for each function
             assistant = Assistant(assistant_id)
             thread = Thread(assistant)
             threads_info.append((func_info['name'], thread.id))
             
-            # Process the function with its own dedicated thread
             func_annotations, func_interactions_count = process_single_function(
                 thread=thread,
                 func_info=func_info,
                 components=parsed_components,
+                pragma_str=pragma_str,
                 verified_annotations=verified_annotations,
                 eip_doc=eip_doc,
                 base_instructions=base_instructions,
-                examples_text=examples_section_for_prompt, # Pass the examples
+                examples_text=examples_section_for_prompt,
                 max_iterations_per_function=max_iterations_per_function,
                 requested_type=requested_type
             )
@@ -765,39 +927,42 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
             else:
                 function_verification_status[func_info['name']] = "Failed"
             
-            # Save individual thread log for this function
-            thread_save_result = save_thread_to_file(thread.id, requested_type, f"{context_str}_{func_info['name']}", assistant_key, i+1)
+            thread_save_result = save_thread_to_file(thread.id, requested_type, f"{context_str}_{func_info['name']}", assistant_key, current_run_number)
             if not thread_save_result:
-                print(f"WARNING: Failed to save thread file for function {func_info['name']} in run {i+1}")
+                print(f"WARNING: Failed to save thread file for function {func_info['name']} in run {current_run_number}")
 
         run_end_time = time.time()
         duration = run_end_time - run_start_time
 
-        # Assemble final contract (potentially partial)
-        final_contract_code = assemble_partial_contract(contract_name, parsed_components, verified_annotations)
+        final_contract_code = assemble_partial_contract(pragma_str, contract_name, parsed_components, verified_annotations)
         all_functions_verified = all(status == "Verified" for status in function_verification_status.values())
 
-        # Log information about all threads used in this run
-        print(f"Run {i+1} used {len(threads_info)} threads: {', '.join([f'{name}:{tid}' for name, tid in threads_info])}")
+        print(f"Run {current_run_number} used {len(threads_info)} threads: {', '.join([f'{name}:{tid}' for name, tid in threads_info])}")
 
         results.append({
-            "run": i + 1,
+            "run": current_run_number,
             "time_taken": duration,
             "iterations": total_interactions,
             "verified": all_functions_verified,
             "annotated_contract": final_contract_code,
-            "function_status": function_verification_status, # Add function status
-            "status": verification_status, # Append the collected errors for this run
-            "threads": [tid for _, tid in threads_info] # Store thread IDs
+            "function_status": function_verification_status, 
+            "status": verification_status, 
+            "threads": [tid for _, tid in threads_info] 
         })
 
-    # Save results to CSV
-    csv_filename = f"{results_dir}/{file_prefix}.csv"
-    # Adjust save function if needed for the new structure (e.g., function_status)
-    Utils.save_results_to_csv(csv_filename, results)
-    return results
+    results_df = pd.DataFrame(results)
+    if 'run' in results_df.columns:
+        results_df = results_df.sort_values(by='run').reset_index(drop=True)
+        
+    Utils.save_results_to_csv(csv_file_path, results_df.to_dict(orient='records'))
+    logging.info(f"All func_by_func results saved to {csv_file_path}")
+    return results_df.to_dict(orient='records')
 
 def main():
+    """
+    Main entry point for the function-by-function verification process.
+    Parses command line arguments and initiates the verification process.
+    """
     parser = argparse.ArgumentParser(description='Run contract verification with different contexts')
     parser.add_argument('--requested', type=str, required=True, 
                         choices=['erc20', 'erc721', 'erc1155', 'erc123'],
@@ -805,7 +970,7 @@ def main():
     parser.add_argument('--context', type=str, required=True,
                         help='Comma-separated list of context contract types (e.g., "erc20,erc721,erc1155,erc123")')
     parser.add_argument('--assistant', type=str, default='4o-mini',
-                        choices=['4o-mini', 'erc-1155-001-3-16', 'erc-1155-005-3-16', 'erc-1155-010-3-16', 'erc-1155-001-5-16', 'erc-1155-005-5-16', 'erc-1155-010-5-16', 'erc-1155-001-7-16', 'erc-1155-005-7-16', 'erc-1155-001-7-16', 'erc-1155-010-7-16'],
+                        choices=list(ASSISTANT_IDS.keys()),
                         help='The assistant to use')
     parser.add_argument('--runs', type=int, default=10,
                         help='Number of verification runs')
@@ -814,14 +979,11 @@ def main():
     
     args = parser.parse_args()
     
-    # Parse the context types
     if not args.context.strip():
-        # Handle empty context string
         context_types = [""]
     else:
         context_types = [ctx.strip().lower() for ctx in args.context.split(',')]
     
-    # Run the verification process
     run_verification_process(
         requested_type=args.requested.lower(),
         context_types=context_types,
