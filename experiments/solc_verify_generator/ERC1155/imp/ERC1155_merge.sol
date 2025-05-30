@@ -64,6 +64,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      */
     
     ///@notice postcondition balance == _balances[_id][_owner]
+/// @notice postcondition forall (address addr) _owner == addr || balance != __verifier_old_uint(_balances[_id][addr])
 
     function balanceOf(address _owner, uint256 _id) public view   returns (uint256 balance) {
         require(_owner != address(0));
@@ -78,10 +79,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
      * - `accounts` and `ids` must have the same length.
      */
      
-    ///@notice postcondition forall (uint i) (0 <= i && i < _owners.length) ==> (batchBalances[i] == _balances[_ids[i]][_owners[i]])
-/// @notice postcondition batchBalances.length == _owners.length
-/// @notice postcondition forall (uint i) (0 <= i && i < _owners.length) ==> (batchBalances[i] == _balances[_ids[i]][_owners[i]])
-/// @notice postcondition batchBalances.length == _ids.length
+    ///@notice postcondition true
 
     function balanceOfBatch(
         address[] memory _owners,

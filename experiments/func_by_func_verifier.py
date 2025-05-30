@@ -73,6 +73,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 # }
 
 ASSISTANT_IDS = {
+    "4.1":"asst_zX20A8d9KI7rIK8lLoRTgHK2",
     "4o-mini": "asst_uMJ30gjHtG1VIBnqJFKpR6gm",
     "erc-1155-001-5-16": "asst_Mkq2y7mUxjusd47rPSGXrrCM",
     "erc-20-001-5-16": "asst_M6Q7TjZTC5wLDXdA88kCre7o",

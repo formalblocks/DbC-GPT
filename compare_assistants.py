@@ -14,7 +14,7 @@ sns.set(font_scale=1.2)
 sns.set_style("whitegrid")
 
 class AssistantComparer:
-    def __init__(self, results_dir_pattern="experiments/results_entire_contract/*"):
+    def __init__(self, results_dir_pattern="experiments/results_entire_contract_base_full_context/*"):
         """
         Initialize the assistant comparer.
         
@@ -508,7 +508,7 @@ class AssistantComparer:
         table = "\n".join([header, separator] + rows)
         return table
     
-    def generate_detailed_report(self, output_directory="assistant_comparison_report/entire_contract", output_file="detailed_report.md"):
+    def generate_detailed_report(self, output_directory="assistant_comparison_report/entire_contract_base_full_context", output_file="detailed_report.md"):
         """
         Generate a comprehensive detailed report in markdown format similar to the experiment_analysis_summary_latest.md
         """
@@ -707,7 +707,7 @@ class AssistantComparer:
             print(f"Error generating detailed report: {e}")
             return None
             
-    def generate_report(self, output_directory="assistant_comparison_report/entire_contract"):
+    def generate_report(self, output_directory="assistant_comparison_report/entire_contract_base_full_context"):
         """Generate a comprehensive report with tables and visualizations."""
         # Create output directory if it doesn't exist
         os.makedirs(output_directory, exist_ok=True)
