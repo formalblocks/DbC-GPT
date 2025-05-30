@@ -41,15 +41,17 @@ ALL_ASSISTANTS = [
     "erc-721-010-7-16"
 ]
 
-def run_single_assistant(assistant_key, requested_type, num_runs, max_iterations, mode):
-    """Run verification process for a single assistant"""
+ALL_CONTEXT_TYPES = ["erc20", "erc721", "erc1155"]
+
+def run_single_assistant(assistant_key, requested_type, context_type, num_runs, max_iterations, mode):
+    """Run verification process for a single assistant and context type"""
     try:
-        logging.info(f"Starting verification for assistant: {assistant_key}")
+        logging.info(f"Starting verification for assistant: {assistant_key} with context: {context_type}")
         
         if mode == "entire_contract":
             results = run_loop_verification(
                 requested_type=requested_type,
-                context_types=[],  # No context
+                context_types=[context_type] if context_type else [],
                 assistant_key=assistant_key,
                 num_runs=num_runs,
                 max_iterations=max_iterations
@@ -57,16 +59,16 @@ def run_single_assistant(assistant_key, requested_type, num_runs, max_iterations
         else:  # func_by_func mode
             results = run_func_by_func_verification(
                 requested_type=requested_type,
-                context_types=[],  # No context
+                context_types=[context_type] if context_type else [],
                 assistant_key=assistant_key,
                 num_runs=num_runs,
                 max_iterations=max_iterations
             )
             
-        logging.info(f"Completed verification for assistant: {assistant_key}")
+        logging.info(f"Completed verification for assistant: {assistant_key} with context: {context_type}")
         return results
     except Exception as e:
-        logging.error(f"Error running assistant {assistant_key}: {str(e)}")
+        logging.error(f"Error running assistant {assistant_key} with context {context_type}: {str(e)}")
         return None
 
 def main():
@@ -85,6 +87,8 @@ def main():
                         help='Maximum number of parallel workers')
     parser.add_argument('--assistants', type=str, default='all',
                         help='Comma-separated list of assistants to run, or "all" for all available assistants')
+    parser.add_argument('--contexts', type=str, default='',
+                        help='Comma-separated list of context types to use, or "all" for all context types, or empty for no context')
     
     args = parser.parse_args()
 
@@ -98,38 +102,53 @@ def main():
         if invalid_assistants:
             raise ValueError(f"Invalid assistant(s): {', '.join(invalid_assistants)}")
 
+    # Get list of context types to run
+    if args.contexts.lower() == 'all':
+        context_types = ALL_CONTEXT_TYPES
+    elif args.contexts.strip() == '':
+        context_types = [None]  # Use None to indicate empty context
+    else:
+        context_types = [c.strip() for c in args.contexts.split(',') if c.strip()]
+        # Validate that all requested context types exist
+        invalid_contexts = [c for c in context_types if c not in ALL_CONTEXT_TYPES]
+        if invalid_contexts:
+            raise ValueError(f"Invalid context type(s): {', '.join(invalid_contexts)}")
+
     logging.info(f"Starting parallel execution with {args.max_workers} workers")
     logging.info(f"Running {args.runs} runs per assistant with max {args.max_iterations} iterations")
     logging.info(f"Mode: {args.mode}")
     logging.info(f"Requested type: {args.requested}")
     logging.info(f"Assistants: {assistants}")
+    logging.info(f"Context types: {context_types}")
 
     # Create a ProcessPoolExecutor with the specified number of workers
     with ProcessPoolExecutor(max_workers=args.max_workers) as executor:
-        # Submit all assistant runs to the executor
-        future_to_assistant = {
+        # Submit all assistant/context runs to the executor
+        future_to_run = {
             executor.submit(
                 run_single_assistant,
                 assistant_key,
                 args.requested,
+                context_type,
                 args.runs,
                 args.max_iterations,
                 args.mode
-            ): assistant_key
+            ): (assistant_key, context_type)
             for assistant_key in assistants
+            for context_type in context_types
         }
 
         # Process completed futures as they finish
-        for future in as_completed(future_to_assistant):
-            assistant_key = future_to_assistant[future]
+        for future in as_completed(future_to_run):
+            assistant_key, context_type = future_to_run[future]
             try:
                 results = future.result()
                 if results:
-                    logging.info(f"Successfully completed all runs for assistant: {assistant_key}")
+                    logging.info(f"Successfully completed all runs for assistant: {assistant_key} with context: {context_type}")
                 else:
-                    logging.error(f"Failed to complete runs for assistant: {assistant_key}")
+                    logging.error(f"Failed to complete runs for assistant: {assistant_key} with context: {context_type}")
             except Exception as e:
-                logging.error(f"Error processing results for assistant {assistant_key}: {str(e)}")
+                logging.error(f"Error processing results for assistant {assistant_key} with context {context_type}: {str(e)}")
 
     logging.info("All parallel executions completed")
 
