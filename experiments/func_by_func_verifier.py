@@ -118,6 +118,7 @@ Task:
     ```/// @notice postcondition condition1\\n
     /// @notice postcondition condition2\\n
     function foo(uint256 bar, address par) public;```
+    - Return ONLY what is inside the <postconditions>...</postconditions> block.
 
 Requirements:
     - Ensure conditions correctly represent the expected state changes and return values.
@@ -128,6 +129,13 @@ Requirements:
     - A quantified postcondition MUST start with `forall`. For instance, a quantified postcondition look like `/// @notice postcondition forall (uint x) condition`. Without the `forall` at the beginning, the postcondition is invalid.
     - YOU MUST SPECIFY THE RANGE when postconditions quantify over arrays. For example, for array `arr` a postcondition quantification would look like `/// @notice postcondition forall (uint i) !(0 <= i && i < arr.length) || condition`. Without the range, the postcondition is likely to be invalid.
     - The implication operator "==>" is not valid in solc-verify notation, so it must appear NOWHERE in a postcondition. For instance, a postcondition of the form `/// @notice postcondition condition1 ==> condition2` is invalid. Similarly, a postcondition of the form `/// @notice postcondition (forall uint x) condition1 ==> condition2` is also invalid. You can use instead the notation `!(condition) || condition2` to simulate the implication operator. For instance, `/// @notice postcondition (forall uint x) condition1 ==> condition2` can be written as `/// @notice postcondition !(condition1) || condition2`.
+
+
+OUTPUT FORMAT:
+<postconditions>
+/// @notice postcondition ...
+/// @notice postcondition ...
+</postconditions>
 
 Your task is to annotate the function in the contract below:
 """
@@ -702,21 +710,48 @@ def assemble_partial_contract(pragma_str: str, contract_name: str, components: d
 
 def extract_annotations_for_function(llm_response: str, target_func_sig: str):
     """
-    Extracts annotations from an LLM response.
-    
+    Extracts annotations from an LLM response inside <postconditions> tags.
+
     Args:
         llm_response: Response from the language model
-        target_func_sig: Function signature to extract annotations for
-        
+        target_func_sig: Function signature (used for logging/debugging)
+
     Returns:
-        Extracted annotations or None if not found
+        Extracted annotations string or None if not found
     """
     if not llm_response or not llm_response.strip():
         print(f"LLM response for {target_func_sig} is empty or whitespace.")
         return None
 
-    processed_llm_response = llm_response.strip()
-    postcondition_lines = [line.strip().rstrip(";") for line in processed_llm_response.split('\n') if "@notice postcondition" in line.strip()]
+    # Normalize whitespace
+    response = llm_response.strip()
+
+    # Locate the <postconditions> block
+    start_tag = "<postconditions>"
+    end_tag = "</postconditions>"
+
+    start_idx = response.find(start_tag)
+    end_idx = response.find(end_tag)
+
+    if start_idx == -1 or end_idx == -1 or end_idx <= start_idx:
+        print(f"Could not find <postconditions> block in LLM response for {target_func_sig}")
+        return None
+
+    # Extract content between the tags
+    content = response[start_idx + len(start_tag):end_idx].strip()
+
+    # Ensure each line is a postcondition, strip any trailing semicolons just in case
+    postcondition_lines = [
+        line.strip().rstrip(";")
+        for line in content.splitlines()
+        if "@notice postcondition" in line
+    ]
+
+    if not postcondition_lines:
+        print(f"No valid postconditions found inside <postconditions> for {target_func_sig}")
+        return None
+
+    # Return joined string of clean postconditions
     final_annotations_str = "\n".join(postcondition_lines)
     return final_annotations_str
 
@@ -844,6 +879,12 @@ EIP Documentation Snippet (if relevant to `{func_name}`):
             ```
 
             Can you fix the specification accordingly?
+            
+            OUTPUT FORMAT:
+            <postconditions>
+            /// @notice postcondition ...
+            /// @notice postcondition ...
+            </postconditions>
             
             **Examples:**
             {examples_text}
