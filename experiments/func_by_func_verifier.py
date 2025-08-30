@@ -749,14 +749,6 @@ def process_single_function(thread: Thread, func_info: dict, components: dict, p
     state_vars_str = "\n".join(components.get('state_vars', []))
     events_str = "\n".join(components.get('events', []))
 
-    # Extract EIP snippet specific to the current function
-    specific_eip_snippet = "No specific EIP segment found for this function."
-    if eip_doc and func_name:
-        pattern = rf"(/\*\*(?:[^*]|\*(?!/))*?\*/\s*function\s+{re.escape(func_name)}\s*\(.*\).*?;)"
-        match = re.search(pattern, eip_doc, re.DOTALL)
-        if match:
-            specific_eip_snippet = match.group(1).strip()
-
     indented_state_vars = "\n".join([f"    {var}" for var in components.get('state_vars', [])])
 
     # Check for function-specific documentation
@@ -783,7 +775,7 @@ contract {contract_name} {{
 
 EIP markdown below:
 <eip>
-{specific_eip_snippet}
+{eip_doc}
 </eip>
 """).lstrip()
     else:
@@ -801,7 +793,7 @@ contract {contract_name} {{
 
 EIP Documentation Snippet (if relevant to `{func_name}`):
 <eip>
-{specific_eip_snippet}
+{eip_doc}
 </eip>
 """).lstrip()
 
@@ -839,7 +831,7 @@ EIP Documentation Snippet (if relevant to `{func_name}`):
         error_output = verification_result.output
 
         if verification_passed:
-            logging.info(f"Successfully verified annotations for function {func_name}.")
+            logging.info(f"##### SUCCESSFULLY VERIFIED ANNOTATIONS FOR FUNCTION {func_name}. #####")
             return proposed_annotations, func_interactions
         else:
             logging.warning(f"Verification failed for function {func_name} (Attempt {attempt + 1}). Error: {error_output[:500]}...")
@@ -852,6 +844,9 @@ EIP Documentation Snippet (if relevant to `{func_name}`):
             ```
 
             Can you fix the specification accordingly?
+            
+            **Examples:**
+            {examples_text}
             """
 
     logging.error(f"Failed to verify annotations for function {func_name} after {max_iterations_per_function} attempts.")
@@ -902,7 +897,7 @@ def run_verification_process(requested_type, context_types, assistant_key="4o-mi
 
     pragma_str = parsed_components.get('pragma', "pragma solidity ^0.8.0;")
     contract_name = requested_type.upper()
-    eip_doc = Utils.extract_content_from_markdown(EIP_PATHS.get(requested_type, ""))
+    eip_doc = Utils.read_file_content(EIP_PATHS.get(requested_type, ""))
     base_instructions = INSTRUCTIONS
 
     # Generate example texts from context types
