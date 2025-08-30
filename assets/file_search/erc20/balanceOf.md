@@ -9,4 +9,4 @@ uint256 private _totalSupply;
 Returns the account balance of another account with address `_owner`.
 
 $ADD POSTCONDITION HERE
-function balanceOf(address _owner) public view returns (uint256 balance)
+function balanceOf(address _owner) public view returns (uint256 balance);

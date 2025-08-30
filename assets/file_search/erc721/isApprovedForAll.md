@@ -16,4 +16,4 @@ mapping (address => mapping (address => bool)) private _operatorApprovals;
 /// @return True if `_operator` is an approved operator for `_owner`, false otherwise
 
 $ADD POSTCONDITION HERE
-function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+function isApprovedForAll(address _owner, address _operator) public view returns (bool approved);

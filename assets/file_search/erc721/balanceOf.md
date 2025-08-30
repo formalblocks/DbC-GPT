@@ -17,4 +17,4 @@ mapping (address => mapping (address => bool)) private _operatorApprovals;
 /// @return The number of NFTs owned by `_owner`, possibly zero
 
 $ADD POSTCONDITION HERE
-function balanceOf(address _owner) external view returns (uint256);
+function balanceOf(address _owner) public view returns (uint256 balance);

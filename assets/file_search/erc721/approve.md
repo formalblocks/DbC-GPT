@@ -18,4 +18,4 @@ mapping (address => mapping (address => bool)) private _operatorApprovals;
 /// @param _tokenId The NFT to approve
 
 $ADD POSTCONDITION HERE
-function approve(address _approved, uint256 _tokenId) external payable;
+function approve(address _approved, uint256 _tokenId) public;

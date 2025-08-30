@@ -16,4 +16,4 @@ mapping (address => mapping (address => bool)) private _operatorApprovals;
 /// @return The approved address for this NFT, or the zero address if there is none
 
 $ADD POSTCONDITION HERE
-function getApproved(uint256 _tokenId) external view returns (address);
+function getApproved(uint256 _tokenId) public view returns (address approved);

@@ -17,4 +17,4 @@ mapping (address => mapping (address => bool)) private _operatorApprovals;
 /// @param _operator Address to add to the set of authorized operators
 /// @param _approved True if the operator is approved, false to revoke approval
 
-function setApprovalForAll(address _operator, bool _approved) external;
+function setApprovalForAll(address _operator, bool _approved) public;

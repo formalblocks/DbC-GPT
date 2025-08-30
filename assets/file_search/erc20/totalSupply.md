@@ -9,4 +9,4 @@ uint256 private _totalSupply;
 Returns the total token supply.
 
 $ADD POSTCONDITION HERE
-function totalSupply() public view returns (uint256)
+function totalSupply() public view returns (uint256 supply);

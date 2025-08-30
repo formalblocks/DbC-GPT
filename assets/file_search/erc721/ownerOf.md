@@ -17,4 +17,4 @@ mapping (address => mapping (address => bool)) private _operatorApprovals;
 /// @return The address of the owner of the NFT
 
 $ADD POSTCONDITION HERE
-function ownerOf(uint256 _tokenId) external view returns (address);
+function ownerOf(uint256 _tokenId) public view returns (address _owner);

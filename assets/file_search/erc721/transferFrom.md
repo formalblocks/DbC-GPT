@@ -22,4 +22,4 @@ mapping (address => mapping (address => bool)) private _operatorApprovals;
 /// @param _tokenId The NFT to transfer
 
 $ADD POSTCONDITION HERE
-function transferFrom(address _from, address _to, uint256 _tokenId) external payable;
+function transferFrom(address _from, address _to, uint256 _tokenId) public;

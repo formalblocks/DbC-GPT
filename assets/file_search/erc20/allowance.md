@@ -9,4 +9,4 @@ uint256 private _totalSupply;
 Returns the amount which `_spender` is still allowed to withdraw from `_owner`.
 
 $ADD POSTCONDITION HERE
-function allowance(address _owner, address _spender) public view returns (uint256 remaining)
+function allowance(address _owner, address _spender) public view returns (uint256 remaining);

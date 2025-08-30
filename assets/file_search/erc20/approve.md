@@ -12,4 +12,4 @@ To prevent attack vectors, clients SHOULD make sure to create user interfaces in
 THOUGH The contract itself shouldn't enforce it, to allow backwards compatibility with contracts deployed before
 
 $ADD POSTCONDITION HERE
-function approve(address _spender, uint256 _value) public returns (bool success)
+function approve(address _spender, uint256 _value) public returns (bool success);

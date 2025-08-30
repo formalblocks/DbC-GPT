@@ -15,4 +15,4 @@ The function SHOULD `throw` unless the `_from` account has deliberately authoriz
 *Note* Transfers of 0 values MUST be treated as normal transfers and fire the `Transfer` event.
 
 $ADD POSTCONDITION HERE
-function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)
+function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
